@@ -322,39 +322,31 @@ const TaskBoard = () => {
         </div>
         
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          {/* Export Button for PhucMKT */}
-          {currentUser?.id === 'PhucMKT' && (
-            <div style={{ position: 'relative' }}>
-              <button 
-                className="btn-secondary"
-                onClick={() => setShowExportMenu(!showExportMenu)}
-                style={{ padding: '8px 16px', gap: '8px', fontSize: '14px', background: 'var(--bg-panel)', border: '1px solid var(--border-light)' }}
-              >
-                <FileOutput size={16} /> Xuất báo cáo
-              </button>
-              {showExportMenu && (
-                <div style={{
-                  position: 'absolute', top: '100%', right: 0, marginTop: '8px', zIndex: 1000,
-                  background: 'var(--bg-panel)', border: '1px solid var(--border-light)',
-                  borderRadius: '12px', boxShadow: 'var(--shadow-lg)', overflow: 'hidden', width: '160px'
-                }}>
-                  <div className="context-menu-item" onClick={() => { setExportFormat('pdf'); setExportType('weekly'); setShowExportMenu(false); }}>
-                    Báo cáo tuần (PDF)
-                  </div>
-                  <div className="context-menu-item" onClick={() => { setExportFormat('word'); setExportType('weekly'); setShowExportMenu(false); }}>
-                    Báo cáo tuần (Word)
-                  </div>
-                  <div style={{ height: '1px', background: 'var(--border-light)' }} />
-                  <div className="context-menu-item" onClick={() => { setExportFormat('pdf'); setExportType('monthly'); setShowExportMenu(false); }}>
-                    Báo cáo tháng (PDF)
-                  </div>
-                  <div className="context-menu-item" onClick={() => { setExportFormat('word'); setExportType('monthly'); setShowExportMenu(false); }}>
-                    Báo cáo tháng (Word)
-                  </div>
+          {/* Export Button for All Users */}
+          <div style={{ position: 'relative' }}>
+            <button 
+              className="btn-secondary"
+              onClick={() => setShowExportMenu(!showExportMenu)}
+              style={{ padding: '8px 16px', gap: '8px', fontSize: '14px', background: 'var(--bg-panel)', border: '1px solid var(--border-light)' }}
+            >
+              <FileOutput size={16} /> Xuất báo cáo
+            </button>
+            {showExportMenu && (
+              <div style={{
+                position: 'absolute', top: '100%', right: 0, marginTop: '8px', zIndex: 1000,
+                background: 'var(--bg-panel)', border: '1px solid var(--border-light)',
+                borderRadius: '12px', boxShadow: 'var(--shadow-lg)', overflow: 'hidden', width: '160px'
+              }}>
+                <div className="context-menu-item" onClick={() => { setExportFormat('word'); setExportType('weekly'); setShowExportMenu(false); }}>
+                  Báo cáo tuần
                 </div>
-              )}
-            </div>
-          )}
+                <div style={{ height: '1px', background: 'var(--border-light)' }} />
+                <div className="context-menu-item" onClick={() => { setExportFormat('word'); setExportType('monthly'); setShowExportMenu(false); }}>
+                  Báo cáo tháng
+                </div>
+              </div>
+            )}
+          </div>
 
           {/* Main Menu Sidebar toggle (from props) */}
           <button 

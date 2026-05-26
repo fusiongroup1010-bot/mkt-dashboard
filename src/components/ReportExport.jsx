@@ -1,5 +1,4 @@
 import React, { useEffect, useRef } from 'react';
-import html2pdf from 'html2pdf.js';
 import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from 'date-fns';
 import {
   Chart as ChartJS,
@@ -11,8 +10,9 @@ import {
   Legend,
 } from 'chart.js';
 import { Bar, Pie } from 'react-chartjs-2';
+import ChartDataLabels from 'chartjs-plugin-datalabels';
 
-ChartJS.register(CategoryScale, LinearScale, BarElement, ArcElement, Tooltip, Legend);
+ChartJS.register(CategoryScale, LinearScale, BarElement, ArcElement, Tooltip, Legend, ChartDataLabels);
 
 // Saturated, bold premium palette (600-level, completely eliminating any blurry/fade-out look)
 const PALETTE = ['#0d9488', '#7c3aed', '#ea580c', '#db2777', '#0284c7', '#16a34a', '#d97706', '#4f46e5'];
@@ -183,21 +183,10 @@ const ReportExport = ({ type, format: exportFormatProp = 'pdf', currentDate, eve
   };
 
   useEffect(() => {
-    const timer = setTimeout(async () => {
+    const timer = setTimeout(() => {
       if (!reportRef.current) return;
       try {
-        if (exportFormatProp === 'word') {
-          exportToWord();
-        } else {
-          // PDF Export
-          await html2pdf().set({
-            margin: 0.5,
-            filename: `BaoCao_${type === 'weekly' ? 'Tuan' : 'Thang'}_MKT_HN_${format(startDate, 'dd-MM-yyyy')}.pdf`,
-            image: { type: 'jpeg', quality: 0.98 },
-            html2canvas: { scale: 3, useCORS: true }, // Crisp 3x scale factor to completely solve blurriness
-            jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' },
-          }).from(reportRef.current).save();
-        }
+        exportToWord();
       } catch (err) {
         console.error('Export error:', err);
       } finally {
@@ -264,8 +253,25 @@ const ReportExport = ({ type, format: exportFormatProp = 'pdf', currentDate, eve
                 data={chart1Data}
                 options={{
                   responsive: true, maintainAspectRatio: false,
-                  plugins: { legend: { display: false } },
-                  scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } },
+                  plugins: { 
+                    legend: { display: false },
+                    datalabels: {
+                      anchor: 'end',
+                      align: 'end',
+                      color: '#000',
+                      font: { weight: 'bold' }
+                    }
+                  },
+                  scales: { 
+                    x: {
+                      title: { display: true, text: 'Tên nhân viên', font: { weight: 'bold' } }
+                    },
+                    y: { 
+                      beginAtZero: true, 
+                      ticks: { stepSize: 1 },
+                      title: { display: true, text: 'Số lượng công việc', font: { weight: 'bold' } }
+                    } 
+                  },
                 }}
               />
             </div>
@@ -279,8 +285,35 @@ const ReportExport = ({ type, format: exportFormatProp = 'pdf', currentDate, eve
               Biểu đồ 2: Tỷ lệ hoàn thành tổng thể
               <br /><span style={S.chartSub}>Tỷ lệ hoàn thành Tổng thể – {type === 'weekly' ? 'Tuần' : 'Tháng'}</span>
             </div>
-            <div style={{ width: '300px', height: '240px', margin: '0 auto' }}>
-              <Pie data={chart2Data} options={{ responsive: true, maintainAspectRatio: false }} />
+            <div style={{ width: '380px', height: '240px', margin: '0 auto' }}>
+              <Pie 
+                data={{
+                  labels: [`Hoàn thành (${doneTasks})`, `Chưa hoàn thành (${totalTasks - doneTasks})`],
+                  datasets: [{
+                    data: [doneTasks, totalTasks - doneTasks],
+                    backgroundColor: ['#16a34a', '#ea580c'],
+                    borderWidth: 2,
+                  }],
+                }} 
+                options={{ 
+                  responsive: true, maintainAspectRatio: false,
+                  plugins: {
+                    legend: { position: 'right' },
+                    datalabels: {
+                      color: '#fff',
+                      font: { weight: 'bold', size: 12 },
+                      formatter: (value, ctx) => {
+                        if (value === 0) return '';
+                        let sum = 0;
+                        let dataArr = ctx.chart.data.datasets[0].data;
+                        dataArr.map(data => { sum += data; });
+                        let percentage = (value*100 / sum).toFixed(1)+"%";
+                        return percentage;
+                      }
+                    }
+                  }
+                }} 
+              />
             </div>
           </div>
         )}
@@ -292,14 +325,33 @@ const ReportExport = ({ type, format: exportFormatProp = 'pdf', currentDate, eve
               Biểu đồ 3: Tỷ lệ hoàn thành của từng nhân viên
               <br /><span style={S.chartSub}>Tỷ lệ hoàn thành theo phòng ban – {type === 'weekly' ? 'Tuần' : 'Tháng'}</span>
             </div>
-            <div style={{ width: '100%', height: `${Math.max(180, empRates.length * 40)}px` }}>
+            <div style={{ width: '100%', height: `${Math.max(220, empRates.length * 50)}px` }}>
               <Bar
                 data={chart3Data}
                 options={{
                   indexAxis: 'y',
                   responsive: true, maintainAspectRatio: false,
-                  plugins: { legend: { display: false } },
-                  scales: { x: { beginAtZero: true, max: 100, ticks: { callback: (v) => `${v}%` } } },
+                  layout: { padding: { right: 40 } },
+                  plugins: { 
+                    legend: { display: false },
+                    datalabels: {
+                      anchor: 'end',
+                      align: 'end',
+                      color: '#000',
+                      font: { weight: 'bold' },
+                      formatter: (value) => `${value}%`
+                    }
+                  },
+                  scales: { 
+                    x: { 
+                      beginAtZero: true, max: 100, 
+                      ticks: { callback: (v) => `${v}%` },
+                      title: { display: true, text: 'Tỷ lệ hoàn thành (%)', font: { weight: 'bold' } }
+                    },
+                    y: {
+                      title: { display: true, text: 'Tên nhân viên', font: { weight: 'bold' } }
+                    }
+                  },
                 }}
               />
             </div>
@@ -334,8 +386,9 @@ const ReportExport = ({ type, format: exportFormatProp = 'pdf', currentDate, eve
                 </thead>
                 <tbody>
                   {tasks.map((task, i) => {
+                    const yearStr = format(new Date(task.dueDate), 'yyyy');
                     const dateStr = task.endDate && task.endDate !== task.dueDate
-                      ? `${format(new Date(task.dueDate), 'dd/MM/yy')} → ${format(new Date(task.endDate), 'dd/MM/yy')}`
+                      ? `${format(new Date(task.dueDate), 'dd/MM')} - ${format(new Date(task.endDate), `dd/MM/${yearStr}`)}`
                       : format(new Date(task.dueDate), 'dd/MM/yyyy');
                     
                     const depts = (task.sendToDepartments || [])
@@ -353,7 +406,12 @@ const ReportExport = ({ type, format: exportFormatProp = 'pdf', currentDate, eve
                         <td style={S.td}>{i + 1}</td>
                         <td style={S.td}>{dateStr}</td>
                         <td style={S.td}>{task.dueTime}</td>
-                        <td style={S.tdL}>{task.title}</td>
+                        <td style={S.tdL}>
+                          <div style={{ fontWeight: 'bold' }}>{task.title}</div>
+                          {task.description && (
+                            <div style={{ fontStyle: 'italic', marginTop: '4px', fontSize: '10px' }}>{task.description}</div>
+                          )}
+                        </td>
                         <td style={S.td}>{depts}</td>
                         <td style={{ ...S.td, color: getStatusColor(task.status), fontWeight: 'bold' }}>
                           {getStatusText(task.status)}
