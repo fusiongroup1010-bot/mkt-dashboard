@@ -170,12 +170,21 @@ const CalendarView = () => {
                         const itemBorder = isBetween ? `1px dashed ${cat.accent}` : `3px solid rgba(255,255,255,0.3)`;
 
                         return (
-                           <div id={`event-${e.id}`} key={e.id} onClick={(ev) => { ev.stopPropagation(); toggleFocus(e.id); openEditModal(e); }} style={{ 
+                           <div id={`event-${e.id}`} key={e.id} 
+                             onClick={(ev) => { ev.stopPropagation(); toggleFocus(e.id); openEditModal(e); }}
+                             onContextMenu={(ev) => {
+                               ev.preventDefault();
+                               ev.stopPropagation();
+                               if (canEdit && window.confirm('Bạn có chắc chắn muốn xóa công việc này không?')) {
+                                 deleteEvent(e.id);
+                               }
+                             }}
+                             style={{ 
                              background: itemBg,
                              borderLeft: isBetween ? 'none' : '3px solid rgba(255,255,255,0.3)',
                              border: isBetween ? itemBorder : 'none',
                              color: itemColor,
-                             padding: '4px 6px', borderRadius: '4px', fontSize: '11px', cursor: 'pointer',
+                             padding: '4px 6px', borderRadius: '4px', fontSize: '11px', cursor: 'context-menu',
                              display: 'flex', flexDirection: 'column', gap: '2px', lineHeight: '1.3',
                              transition: 'transform 0.2s',
                              transform: isFocused ? 'scale(1.02)' : 'none',

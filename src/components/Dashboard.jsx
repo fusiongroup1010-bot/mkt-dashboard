@@ -267,7 +267,7 @@ const Dashboard = () => {
                   const STATUS_COLORS = { todo: '#6b7280', 'in-progress': '#0284c7', done: '#16a34a' };
                   const statusLabel = item.status === 'in-progress' ? 'In Progress' : item.status === 'done' ? 'Done' : 'To Do';
                   return (
-                    <div key={item.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 14px', background: 'var(--bg-main)', borderRadius: '12px', borderLeft: `4px solid ${catColor}` }}>
+                    <div key={item.id} onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); setContextMenu({ x: e.clientX, y: e.clientY, itemId: item.id }); }} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 14px', background: 'var(--bg-main)', borderRadius: '12px', borderLeft: `4px solid ${catColor}`, cursor: 'context-menu' }}>
                       <span style={{ fontSize: '13px', fontWeight: '800', color: 'var(--text-muted)', minWidth: '20px' }}>{idx + 1}.</span>
                       <span style={{ fontSize: '11px', fontWeight: '800', color: '#fff', background: typeCfg.color, borderRadius: '6px', padding: '2px 6px', display: 'inline-flex', alignItems: 'center', gap: '3px', flexShrink: 0 }}>
                         <TypeIcon size={10} /> {typeCfg.label}

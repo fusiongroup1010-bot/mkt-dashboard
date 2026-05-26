@@ -39,7 +39,7 @@ const toCalSlots = (item, weekStart) => {
 
   const [h, m] = item.dueTime.split(':').map(Number);
   const start  = h + m / 60;
-  const cat    = CATEGORY_MAP[item.categoryId] || Object.values(CATEGORY_MAP)[0];
+  const cat    = CATEGORY_MAP[item.categoryId] || { color: '#888', text: '#fff', accent: '#888' };
   const isMultiDay = item.endDate && item.endDate !== item.dueDate;
 
   return [{
@@ -100,6 +100,11 @@ const EventCard = ({ event, topPos, height, leftPos, width, onEdit, onDelete, on
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => { setIsHovered(false); setMenuOpen(false); }}
       onClick={() => { if(canEdit) onOpen(); }}
+      onContextMenu={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (canEdit) setMenuOpen(true);
+      }}
     >
       <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '4px' }}>
@@ -301,7 +306,7 @@ const TaskBoard = () => {
   // Compute calendar slots from unified items
   const calSlots = events
     .filter(e => e.type === 'task') // ONLY SHOW TASKS
-    .filter(e => activeCategories[e.categoryId])
+    .filter(e => !CATEGORY_MAP[e.categoryId] || activeCategories[e.categoryId])
     .flatMap(e => toCalSlots(e, weekStart))
     .filter(Boolean)
     .filter(s => s.start >= START_HOUR && s.start < START_HOUR + HOURS_COUNT);
