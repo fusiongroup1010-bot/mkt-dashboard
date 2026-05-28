@@ -5,8 +5,8 @@ import { enUS } from 'date-fns/locale';
 import { DayPicker } from 'react-day-picker';
 import 'react-day-picker/dist/style.css';
 import { useEvents, CATEGORY_MAP, DEPARTMENTS } from '../context/EventContext';
-import { useAuth, EMPLOYEES } from '../context/AuthContext';
 import ReportExport from './ReportExport';
+import ExportModal from './ExportModal';
 
 // Resolve real display name for a member/category ID
 const getDisplayName = (id) => {
@@ -253,8 +253,11 @@ const EventCard = ({ event, topPos, height, leftPos, width, onEdit, onDelete, on
 /* ── Main Week Calendar ── */
 const TaskBoard = () => {
   const [selectedDate, setSelectedDate] = useState(new Date());
-  const [exportType, setExportType] = useState(null); // null | 'weekly' | 'monthly'
-  const [exportFormat, setExportFormat] = useState('pdf'); // 'pdf' | 'word'
+  const [exportType, setExportType] = useState(null); // null | 'weekly' | 'monthly' | 'daily' | 'custom'
+  const [exportFormat, setExportFormat] = useState('word'); // 'pdf' | 'word'
+  const [exportStartDate, setExportStartDate] = useState(null);
+  const [exportEndDate, setExportEndDate] = useState(null);
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [showExportMenu, setShowExportMenu] = useState(false);
   const { events, openEditModal, deleteEvent, updateEvent, openAddModal, activeLocation, isEditable } = useEvents();
   const { currentUser } = useAuth();
@@ -323,29 +326,14 @@ const TaskBoard = () => {
         
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           {/* Export Button for All Users */}
-          <div style={{ position: 'relative' }}>
+          <div>
             <button 
               className="btn-secondary"
-              onClick={() => setShowExportMenu(!showExportMenu)}
+              onClick={() => setIsExportModalOpen(true)}
               style={{ padding: '8px 16px', gap: '8px', fontSize: '14px', background: 'var(--bg-panel)', border: '1px solid var(--border-light)' }}
             >
               <FileOutput size={16} /> Xuất báo cáo
             </button>
-            {showExportMenu && (
-              <div style={{
-                position: 'absolute', top: '100%', right: 0, marginTop: '8px', zIndex: 1000,
-                background: 'var(--bg-panel)', border: '1px solid var(--border-light)',
-                borderRadius: '12px', boxShadow: 'var(--shadow-lg)', overflow: 'hidden', width: '160px'
-              }}>
-                <div className="context-menu-item" onClick={() => { setExportFormat('word'); setExportType('weekly'); setShowExportMenu(false); }}>
-                  Báo cáo tuần
-                </div>
-                <div style={{ height: '1px', background: 'var(--border-light)' }} />
-                <div className="context-menu-item" onClick={() => { setExportFormat('word'); setExportType('monthly'); setShowExportMenu(false); }}>
-                  Báo cáo tháng
-                </div>
-              </div>
-            )}
           </div>
 
           {/* Main Menu Sidebar toggle (from props) */}
@@ -617,17 +605,35 @@ const TaskBoard = () => {
       </div>
 
       {/* Hidden Export Component */}
-      {exportType && (
+      {exportType && exportStartDate && exportEndDate && (
         <ReportExport 
           type={exportType}
           format={exportFormat}
-          currentDate={selectedDate}
+          startDate={exportStartDate}
+          endDate={exportEndDate}
           events={events.filter(e => e.type === 'task')}
           employees={EMPLOYEES}
           departments={DEPARTMENTS[activeLocation] || []}
-          onClose={() => { setExportType(null); setExportFormat('pdf'); }}
+          onClose={() => { 
+            setExportType(null); 
+            setExportFormat('word');
+            setExportStartDate(null);
+            setExportEndDate(null);
+          }}
         />
       )}
+
+      {/* Export Selection Dialog */}
+      <ExportModal 
+        isOpen={isExportModalOpen}
+        onClose={() => setIsExportModalOpen(false)}
+        onExport={({ type, startDate, endDate }) => {
+          setExportFormat('word');
+          setExportStartDate(startDate);
+          setExportEndDate(endDate);
+          setExportType(type);
+        }}
+      />
     </div>
   );
 };

@@ -17,21 +17,20 @@ ChartJS.register(CategoryScale, LinearScale, BarElement, ArcElement, Tooltip, Le
 // Saturated, bold premium palette (600-level, completely eliminating any blurry/fade-out look)
 const PALETTE = ['#0d9488', '#7c3aed', '#ea580c', '#db2777', '#0284c7', '#16a34a', '#d97706', '#4f46e5'];
 
-const ReportExport = ({ type, format: exportFormatProp = 'pdf', currentDate, events, employees, onClose }) => {
+const ReportExport = ({ type, format: exportFormatProp = 'pdf', startDate: propStartDate, endDate: propEndDate, events, employees, onClose }) => {
   const reportRef = useRef(null);
 
-  // Date range
-  let startDate, endDate;
-  if (type === 'weekly') {
-    startDate = startOfWeek(currentDate, { weekStartsOn: 1 });
-    endDate   = endOfWeek(currentDate,   { weekStartsOn: 1 });
-  } else {
-    startDate = startOfMonth(currentDate);
-    endDate   = endOfMonth(currentDate);
-  }
+  // Date range directly passed as Date objects
+  const startDate = propStartDate;
+  const endDate   = propEndDate;
+
   const startStr = format(startDate, 'yyyy-MM-dd');
   const endStr   = format(endDate,   'yyyy-MM-dd');
-  const periodStr = `Từ ${format(startDate, 'dd-MM-yyyy')} đến ${format(endDate, 'dd-MM-yyyy')}`;
+  
+  let periodStr = `Từ ${format(startDate, 'dd-MM-yyyy')} đến ${format(endDate, 'dd-MM-yyyy')}`;
+  if (type === 'daily') {
+    periodStr = `Ngày ${format(startDate, 'dd-MM-yyyy')}`;
+  }
 
   // Filter tasks that overlap the period
   const filteredEvents = events.filter(e => {
@@ -175,7 +174,11 @@ const ReportExport = ({ type, format: exportFormatProp = 'pdf', currentDate, eve
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `BaoCao_${type === 'weekly' ? 'Tuan' : 'Thang'}_MKT_HN_${format(startDate, 'dd-MM-yyyy')}.doc`;
+    let typeName = 'Tuan';
+    if (type === 'daily') typeName = 'Ngay';
+    if (type === 'monthly') typeName = 'Thang';
+    if (type === 'custom') typeName = 'TuyChinh';
+    link.download = `BaoCao_${typeName}_MKT_HN_${format(startDate, 'dd-MM-yyyy')}.doc`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -219,7 +222,7 @@ const ReportExport = ({ type, format: exportFormatProp = 'pdf', currentDate, eve
         {/* Header */}
         <div style={S.header}>
           <h1 style={S.h1}>BÁO CÁO TỔNG HỢP CÔNG VIỆC</h1>
-          <h2 style={S.h2}>BÁO CÁO {type === 'weekly' ? 'TUẦN' : 'THÁNG'} PHÒNG MKT HN</h2>
+          <h2 style={S.h2}>BÁO CÁO {type === 'daily' ? 'NGÀY' : type === 'weekly' ? 'TUẦN' : type === 'monthly' ? 'THÁNG' : 'TÙY CHỈNH'} PHÒNG MKT HN</h2>
           <p style={S.sub}>{periodStr}</p>
         </div>
 
@@ -246,7 +249,7 @@ const ReportExport = ({ type, format: exportFormatProp = 'pdf', currentDate, eve
           <div style={{ pageBreakInside: 'avoid', marginBottom: '24px' }}>
             <div style={S.chartTitle}>
               Biểu đồ 1: Số lượng công việc của từng nhân viên
-              <br /><span style={S.chartSub}>Số lượng công việc theo phòng ban – {type === 'weekly' ? 'Tuần' : 'Tháng'} {format(startDate, 'dd/MM/yyyy')}</span>
+              <br /><span style={S.chartSub}>Số lượng công việc theo phòng ban – {type === 'daily' ? 'Ngày' : type === 'weekly' ? 'Tuần' : type === 'monthly' ? 'Tháng' : 'Tùy chỉnh'} {format(startDate, 'dd/MM/yyyy')}</span>
             </div>
             <div style={{ width: '100%', height: '260px' }}>
               <Bar
@@ -283,7 +286,7 @@ const ReportExport = ({ type, format: exportFormatProp = 'pdf', currentDate, eve
           <div style={{ pageBreakInside: 'avoid', marginBottom: '24px' }}>
             <div style={S.chartTitle}>
               Biểu đồ 2: Tỷ lệ hoàn thành tổng thể
-              <br /><span style={S.chartSub}>Tỷ lệ hoàn thành Tổng thể – {type === 'weekly' ? 'Tuần' : 'Tháng'}</span>
+              <br /><span style={S.chartSub}>Tỷ lệ hoàn thành Tổng thể – {type === 'daily' ? 'Ngày' : type === 'weekly' ? 'Tuần' : type === 'monthly' ? 'Tháng' : 'Tùy chỉnh'}</span>
             </div>
             <div style={{ width: '380px', height: '240px', margin: '0 auto' }}>
               <Pie 
@@ -323,7 +326,7 @@ const ReportExport = ({ type, format: exportFormatProp = 'pdf', currentDate, eve
           <div style={{ pageBreakBefore: 'always', marginTop: '20px' }}>
             <div style={S.chartTitle}>
               Biểu đồ 3: Tỷ lệ hoàn thành của từng nhân viên
-              <br /><span style={S.chartSub}>Tỷ lệ hoàn thành theo phòng ban – {type === 'weekly' ? 'Tuần' : 'Tháng'}</span>
+              <br /><span style={S.chartSub}>Tỷ lệ hoàn thành theo phòng ban – {type === 'daily' ? 'Ngày' : type === 'weekly' ? 'Tuần' : type === 'monthly' ? 'Tháng' : 'Tùy chỉnh'}</span>
             </div>
             <div style={{ width: '100%', height: `${Math.max(220, empRates.length * 50)}px` }}>
               <Bar
