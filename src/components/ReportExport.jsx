@@ -110,7 +110,7 @@ const ReportExport = ({ type, format: exportFormatProp = 'pdf', startDate: propS
     datasets: [{
       label: 'Tỷ lệ hoàn thành (%)',
       data: empRates.map(x => x.rate),
-      backgroundColor: empRates.map((_, i) => '#4ade80'),
+      backgroundColor: empRates.map((_, i) => '#60a5fa'),
       borderRadius: 4,
     }],
   };
@@ -263,11 +263,18 @@ const ReportExport = ({ type, format: exportFormatProp = 'pdf', startDate: propS
                 responsive: true, maintainAspectRatio: false,
                 plugins: { 
                   legend: { display: false },
-                  datalabels: { anchor: 'end', align: 'end', color: '#000', font: { weight: 'bold' } }
+                  datalabels: { anchor: 'end', align: 'end', color: '#1e3a8a', font: { weight: 'bold' } }
                 },
                 scales: { 
-                  x: { grid: { display: false } },
-                  y: { beginAtZero: true, ticks: { stepSize: 1 } } 
+                  x: { 
+                    grid: { display: true, drawBorder: true, color: '#f1f5f9' },
+                    ticks: { display: true }
+                  },
+                  y: { 
+                    beginAtZero: true, 
+                    ticks: { stepSize: 0.25 },
+                    grid: { display: true, drawBorder: true, color: '#f1f5f9' }
+                  } 
                 },
               }}
             />
@@ -328,112 +335,93 @@ const ReportExport = ({ type, format: exportFormatProp = 'pdf', startDate: propS
         <div style={{ pageBreakBefore: 'always', marginTop: '20px' }} />
         <div style={S.secTitle}>II. CHI TIẾT CÔNG VIỆC</div>
         
-        {/* A. CÔNG VIỆC DAILY */}
-        <div style={S.secSubTitle}>A. CÔNG VIỆC DAILY</div>
-        <table style={S.table}>
-          <thead>
-            <tr>
-              <th style={{ ...S.th, width: '6%' }}>STT</th>
-              <th style={{ ...S.th, width: '14%' }}>Ngày</th>
-              <th style={{ ...S.th, width: '14%' }}>Thời gian</th>
-              <th style={{ ...S.th, width: '30%' }}>Nội dung công việc</th>
-              <th style={{ ...S.th, width: '14%' }}>Người phụ trách</th>
-              <th style={{ ...S.th, width: '14%' }}>Tình trạng</th>
-              <th style={{ ...S.th, width: '8%' }}>Ghi chú</th>
-            </tr>
-          </thead>
-          <tbody>
-            {dailyTasks.map((task, i) => {
-              const depts = (task.sendToDepartments || [])
-                .map(id => getDisplayName(id))
-                .filter(Boolean)
-                .join(', ');
-              const assignee = depts ? `${getDisplayName(task.categoryId)} (${depts})` : getDisplayName(task.categoryId);
-              
-              return (
-                <tr key={task.id}>
-                  <td style={S.td}>{i + 1}</td>
-                  <td style={S.td}>{format(new Date(task.dueDate), 'dd/MM/yyyy')}</td>
-                  <td style={S.td}>{task.dueTime}</td>
-                  <td style={{ ...S.tdL, fontWeight: 'normal' }}>{task.title}</td>
-                  <td style={{ ...S.tdL, fontWeight: 'normal', textAlign: 'center' }}>{assignee}</td>
-                  <td style={{ ...S.td, color: '#111' }}>{getStatusText(task.status)}</td>
-                  <td style={{ ...S.tdL, fontWeight: 'normal', textAlign: 'center' }}>-</td>
-                </tr>
-              );
-            })}
-            {dailyTasks.length === 0 && (
-              <tr><td colSpan="7" style={S.td}>Không có dữ liệu</td></tr>
-            )}
-          </tbody>
-        </table>
+        {activeEmployees.map(emp => {
+          const empDailyTasks = dailyTasks.filter(e => e.categoryId === emp.id);
+          const empCampTasks = campTasks.filter(e => e.categoryId === emp.id);
+          if (empDailyTasks.length === 0 && empCampTasks.length === 0) return null;
 
-        {/* B. CÔNG VIỆC THEO CAMPAIGN */}
-        <div style={S.secSubTitle}>B. CÔNG VIỆC THEO CAMPAIGN</div>
-        <table style={S.table}>
-          <thead>
-            <tr>
-              <th style={{ ...S.th, width: '6%' }}>STT</th>
-              <th style={{ ...S.th, width: '18%' }}>Tên Campaign</th>
-              <th style={{ ...S.th, width: '18%' }}>Mục tiêu</th>
-              <th style={{ ...S.th, width: '16%' }}>Mốc thời gian</th>
-              <th style={{ ...S.th, width: '12%' }}>Người phụ trách</th>
-              <th style={{ ...S.th, width: '10%' }}>Tiến độ (%)</th>
-              <th style={{ ...S.th, width: '12%' }}>Tình trạng</th>
-              <th style={{ ...S.th, width: '8%' }}>Ghi chú</th>
-            </tr>
-          </thead>
-          <tbody>
-            {campTasks.map((task, i) => {
-              const depts = (task.sendToDepartments || [])
-                .map(id => getDisplayName(id))
-                .filter(Boolean)
-                .join(', ');
-              const assignee = depts ? `${getDisplayName(task.categoryId)} (${depts})` : getDisplayName(task.categoryId);
-              const progress = task.status === 'done' ? 100 : task.status === 'in-progress' ? 50 : 0;
-              const dateStr = task.endDate && task.endDate !== task.dueDate
-                ? `${format(new Date(task.dueDate), 'dd/MM/yyyy')} - ${format(new Date(task.endDate), 'dd/MM/yyyy')}`
-                : format(new Date(task.dueDate), 'dd/MM/yyyy');
-                
-              return (
-                <tr key={task.id}>
-                  <td style={S.td}>{i + 1}</td>
-                  <td style={{ ...S.tdL, fontWeight: 'normal' }}>{task.title}</td>
-                  <td style={{ ...S.tdL, fontWeight: 'normal' }}>{task.description || '-'}</td>
-                  <td style={S.td}>{dateStr}</td>
-                  <td style={{ ...S.tdL, fontWeight: 'normal', textAlign: 'center' }}>{assignee}</td>
-                  <td style={S.td}>{progress}%</td>
-                  <td style={{ ...S.td, color: '#111' }}>{getStatusText(task.status)}</td>
-                  <td style={{ ...S.tdL, fontWeight: 'normal', textAlign: 'center' }}>-</td>
-                </tr>
-              );
-            })}
-            {campTasks.length === 0 && (
-              <tr><td colSpan="8" style={S.td}>Không có dữ liệu</td></tr>
-            )}
-          </tbody>
-        </table>
+          return (
+            <div key={emp.id} style={{ marginBottom: '24px', pageBreakInside: 'avoid' }}>
+              <table style={S.table}>
+                <thead>
+                  <tr>
+                    <th colSpan={empCampTasks.length > 0 ? "7" : "6"} style={{ ...S.th, textAlign: 'left', background: '#dbeafe', color: '#1e3a8a', fontSize: '13px' }}>
+                      Nhân viên: {getDisplayName(emp.id)}
+                    </th>
+                  </tr>
+                </thead>
+              </table>
 
-        {/* Section III */}
-        <div style={{ pageBreakInside: 'avoid' }}>
-          <div style={S.secTitle}>III. ĐÁNH GIÁ & ĐỀ XUẤT</div>
-          <table style={S.table}>
-            <tbody>
-              <tr>
-                <td style={{ ...S.th, textAlign: 'left', width: '30%', color: '#111', background: '#f1f5f9' }}>1. Kết quả nổi bật</td>
-                <td style={{ ...S.tdL, fontWeight: 'normal', width: '70%' }}><br/><br/></td>
-              </tr>
-              <tr>
-                <td style={{ ...S.th, textAlign: 'left', width: '30%', color: '#111', background: '#f1f5f9' }}>2. Khó khăn / Tồn đọng</td>
-                <td style={{ ...S.tdL, fontWeight: 'normal', width: '70%' }}><br/><br/></td>
-              </tr>
-              <tr>
-                <td style={{ ...S.th, textAlign: 'left', width: '30%', color: '#111', background: '#f1f5f9' }}>3. Đề xuất / Kế hoạch tiếp theo</td>
-                <td style={{ ...S.tdL, fontWeight: 'normal', width: '70%' }}><br/><br/><br/></td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+              {empDailyTasks.length > 0 && (
+                <>
+                  <div style={{ ...S.secSubTitle, marginTop: '0px' }}>A. CÔNG VIỆC DAILY</div>
+                  <table style={S.table}>
+                    <thead>
+                      <tr>
+                        <th style={{ ...S.th, width: '6%' }}>STT</th>
+                        <th style={{ ...S.th, width: '16%' }}>Ngày</th>
+                        <th style={{ ...S.th, width: '16%' }}>Thời gian</th>
+                        <th style={{ ...S.th, width: '40%' }}>Nội dung công việc</th>
+                        <th style={{ ...S.th, width: '14%' }}>Tình trạng</th>
+                        <th style={{ ...S.th, width: '8%' }}>Ghi chú</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {empDailyTasks.map((task, i) => (
+                        <tr key={task.id}>
+                          <td style={S.td}>{i + 1}</td>
+                          <td style={S.td}>{format(new Date(task.dueDate), 'dd/MM/yyyy')}</td>
+                          <td style={S.td}>{task.dueTime}</td>
+                          <td style={{ ...S.tdL, fontWeight: 'normal' }}>{task.title}</td>
+                          <td style={{ ...S.td, color: '#111' }}>{getStatusText(task.status)}</td>
+                          <td style={{ ...S.tdL, fontWeight: 'normal', textAlign: 'center' }}>-</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </>
+              )}
+
+              {empCampTasks.length > 0 && (
+                <>
+                  <div style={{ ...S.secSubTitle, marginTop: '8px' }}>B. CÔNG VIỆC THEO CAMPAIGN</div>
+                  <table style={S.table}>
+                    <thead>
+                      <tr>
+                        <th style={{ ...S.th, width: '6%' }}>STT</th>
+                        <th style={{ ...S.th, width: '20%' }}>Tên Campaign</th>
+                        <th style={{ ...S.th, width: '24%' }}>Mục tiêu</th>
+                        <th style={{ ...S.th, width: '18%' }}>Mốc thời gian</th>
+                        <th style={{ ...S.th, width: '12%' }}>Tiến độ (%)</th>
+                        <th style={{ ...S.th, width: '12%' }}>Tình trạng</th>
+                        <th style={{ ...S.th, width: '8%' }}>Ghi chú</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {empCampTasks.map((task, i) => {
+                        const progress = task.status === 'done' ? 100 : task.status === 'in-progress' ? 50 : 0;
+                        const dateStr = task.endDate && task.endDate !== task.dueDate
+                          ? `${format(new Date(task.dueDate), 'dd/MM/yyyy')} - \n${format(new Date(task.endDate), 'dd/MM/yyyy')}`
+                          : format(new Date(task.dueDate), 'dd/MM/yyyy');
+                        return (
+                          <tr key={task.id}>
+                            <td style={S.td}>{i + 1}</td>
+                            <td style={{ ...S.tdL, fontWeight: 'normal' }}>{task.title}</td>
+                            <td style={{ ...S.tdL, fontWeight: 'normal' }}>{task.description || '-'}</td>
+                            <td style={{ ...S.td, whiteSpace: 'pre-wrap' }}>{dateStr}</td>
+                            <td style={S.td}>{progress}%</td>
+                            <td style={{ ...S.td, color: '#111' }}>{getStatusText(task.status)}</td>
+                            <td style={{ ...S.tdL, fontWeight: 'normal', textAlign: 'center' }}>-</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </>
+              )}
+            </div>
+          );
+        })}
 
       </div>
     </div>
