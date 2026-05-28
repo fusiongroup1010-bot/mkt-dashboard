@@ -335,28 +335,23 @@ const ReportExport = ({ type, format: exportFormatProp = 'pdf', startDate: propS
         <div style={{ pageBreakBefore: 'always', marginTop: '20px' }} />
         <div style={S.secTitle}>II. CHI TIẾT CÔNG VIỆC</div>
         
-        {activeEmployees.map(emp => {
-          const empDailyTasks = dailyTasks.filter(e => e.categoryId === emp.id);
-          const empCampTasks = campTasks.filter(e => e.categoryId === emp.id);
-          if (empDailyTasks.length === 0 && empCampTasks.length === 0) return null;
-
-          return (
-            <div key={emp.id} style={{ marginBottom: '24px', pageBreakInside: 'avoid' }}>
-              <table style={S.table}>
-                <thead>
-                  <tr>
-                    <th colSpan={empCampTasks.length > 0 ? "7" : "6"} style={{ ...S.th, textAlign: 'left', background: '#dbeafe', color: '#1e3a8a', fontSize: '13px' }}>
-                      Nhân viên: {getDisplayName(emp.id)}
-                    </th>
-                  </tr>
-                </thead>
-              </table>
-
-              {empDailyTasks.length > 0 && (
-                <>
-                  <div style={{ ...S.secSubTitle, marginTop: '0px' }}>A. CÔNG VIỆC DAILY</div>
+        {/* A. CÔNG VIỆC DAILY */}
+        {dailyTasks.length > 0 && (
+          <div style={{ marginBottom: '24px' }}>
+            <div style={S.secSubTitle}>A. CÔNG VIỆC DAILY</div>
+            {activeEmployees.map(emp => {
+              const empDailyTasks = dailyTasks.filter(e => e.categoryId === emp.id);
+              if (empDailyTasks.length === 0) return null;
+              
+              return (
+                <div key={emp.id} style={{ marginBottom: '16px', pageBreakInside: 'avoid' }}>
                   <table style={S.table}>
                     <thead>
+                      <tr>
+                        <th colSpan="6" style={{ ...S.th, textAlign: 'left', background: '#dbeafe', color: '#1e3a8a', fontSize: '13px' }}>
+                          Nhân viên: {getDisplayName(emp.id)}
+                        </th>
+                      </tr>
                       <tr>
                         <th style={{ ...S.th, width: '6%' }}>STT</th>
                         <th style={{ ...S.th, width: '16%' }}>Ngày</th>
@@ -379,14 +374,29 @@ const ReportExport = ({ type, format: exportFormatProp = 'pdf', startDate: propS
                       ))}
                     </tbody>
                   </table>
-                </>
-              )}
+                </div>
+              );
+            })}
+          </div>
+        )}
 
-              {empCampTasks.length > 0 && (
-                <>
-                  <div style={{ ...S.secSubTitle, marginTop: '8px' }}>B. CÔNG VIỆC THEO CAMPAIGN</div>
+        {/* B. CÔNG VIỆC THEO CAMPAIGN */}
+        {campTasks.length > 0 && (
+          <div style={{ marginBottom: '24px' }}>
+            <div style={S.secSubTitle}>B. CÔNG VIỆC THEO CAMPAIGN</div>
+            {activeEmployees.map(emp => {
+              const empCampTasks = campTasks.filter(e => e.categoryId === emp.id);
+              if (empCampTasks.length === 0) return null;
+              
+              return (
+                <div key={emp.id} style={{ marginBottom: '16px', pageBreakInside: 'avoid' }}>
                   <table style={S.table}>
                     <thead>
+                      <tr>
+                        <th colSpan="7" style={{ ...S.th, textAlign: 'left', background: '#dbeafe', color: '#1e3a8a', fontSize: '13px' }}>
+                          Nhân viên: {getDisplayName(emp.id)}
+                        </th>
+                      </tr>
                       <tr>
                         <th style={{ ...S.th, width: '6%' }}>STT</th>
                         <th style={{ ...S.th, width: '20%' }}>Tên Campaign</th>
@@ -417,11 +427,11 @@ const ReportExport = ({ type, format: exportFormatProp = 'pdf', startDate: propS
                       })}
                     </tbody>
                   </table>
-                </>
-              )}
-            </div>
-          );
-        })}
+                </div>
+              );
+            })}
+          </div>
+        )}
 
       </div>
     </div>
