@@ -56,6 +56,7 @@ const TaskModal = () => {
     endDate: new Date().toISOString().split('T')[0],
     dueTime: '08:00', 
     duration: 1,
+    taskCategory: 'daily',
     sendToDepartments: [],
   };
 
@@ -76,6 +77,7 @@ const TaskModal = () => {
         endDate:    currentEvent.endDate    || currentEvent.dueDate || new Date().toISOString().split('T')[0],
         dueTime:    currentEvent.dueTime    || '',
         duration:   currentEvent.duration   || 1,
+        taskCategory: currentEvent.taskCategory || 'daily',
         sendToDepartments: currentEvent.sendToDepartments || [],
       });
     } else {
@@ -93,6 +95,7 @@ const TaskModal = () => {
         endDate: today,
         dueTime: '08:00',
         duration: 1,
+        taskCategory: 'daily',
         sendToDepartments: [],
       });
     }
@@ -107,7 +110,7 @@ const TaskModal = () => {
   const handleStartDateChange = (val) => {
     setForm(f => {
       const next = { ...f, dueDate: val };
-      if (f.endDate < val) {
+      if (f.taskCategory === 'daily' || f.endDate < val) {
         next.endDate = val;
       }
       return next;
@@ -155,6 +158,8 @@ const TaskModal = () => {
   const diffDays = form.dueDate && form.endDate 
     ? Math.max(1, Math.ceil((new Date(form.endDate) - new Date(form.dueDate)) / (1000 * 60 * 60 * 24)) + 1)
     : 1;
+
+  const canDelete = currentEvent && (currentUser?.id === 'PhucMKT' || currentUser?.id === currentEvent.categoryId);
 
   return (
     <div className="modal-overlay" onClick={() => setIsModalOpen(false)}>
@@ -235,6 +240,25 @@ const TaskModal = () => {
               </select>
             </div>
           </div>
+
+          {/* Task Category (Only for Task) */}
+          {isWeekCalendar && (
+            <div className="form-group" style={{ marginBottom: '16px' }}>
+              <label style={labelStyle}>Task Category</label>
+              <select 
+                value={form.taskCategory || 'daily'} 
+                onChange={e => {
+                  const val = e.target.value;
+                  if (val === 'daily') setForm(f => ({ ...f, taskCategory: val, endDate: f.dueDate }));
+                  else set('taskCategory', val);
+                }} 
+                style={selectStyle}
+              >
+                <option value="daily">Daily post</option>
+                <option value="campaign">Campaign</option>
+              </select>
+            </div>
+          )}
 
           {/* Send to Members (Only for Month Report/Meeting - Meeting / Report) */}
           {isMonthCalendar && ['meeting', 'report'].includes(form.type) && (
@@ -328,15 +352,17 @@ const TaskModal = () => {
           </div>
 
           {/* Dates */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: form.taskCategory === 'campaign' || !isWeekCalendar ? '1fr 1fr' : '1fr', gap: '16px', marginBottom: '16px' }}>
             <div className="form-group">
-              <label style={labelStyle}><Calendar size={11} style={{ display: 'inline', marginRight: 4 }} />Start Date</label>
+              <label style={labelStyle}><Calendar size={11} style={{ display: 'inline', marginRight: 4 }} />{form.taskCategory === 'campaign' || !isWeekCalendar ? 'Start Date' : 'Date'}</label>
               <input type="date" value={form.dueDate} onChange={e => handleStartDateChange(e.target.value)} style={inputStyle} />
             </div>
-            <div className="form-group">
-              <label style={labelStyle}><Calendar size={11} style={{ display: 'inline', marginRight: 4 }} />End Date</label>
-              <input type="date" value={form.endDate} onChange={e => handleEndDateChange(e.target.value)} style={inputStyle} />
-            </div>
+            {(form.taskCategory === 'campaign' || !isWeekCalendar) && (
+              <div className="form-group">
+                <label style={labelStyle}><Calendar size={11} style={{ display: 'inline', marginRight: 4 }} />End Date</label>
+                <input type="date" value={form.endDate} onChange={e => handleEndDateChange(e.target.value)} style={inputStyle} />
+              </div>
+            )}
           </div>
 
           {/* Time & Duration */}
@@ -357,7 +383,7 @@ const TaskModal = () => {
           </div>
 
           <div className="modal-footer">
-            {currentEvent && (
+            {canDelete && (
               <button
                 type="button"
                 style={{ marginRight: 'auto', background: 'var(--pink-pastel)', color: 'var(--pink-accent)', padding: '10px 20px', borderRadius: '12px', border: 'none', fontWeight: '800', cursor: 'pointer' }}

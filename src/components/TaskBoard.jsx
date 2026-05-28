@@ -57,7 +57,7 @@ const toCalSlots = (item, weekStart) => {
 };
 
 /* ── Event Card with hover ... dropdown ── */
-const EventCard = ({ event, topPos, height, leftPos, width, onEdit, onDelete, onOpen, onStatusChange, canEdit, isFocused, anyFocused }) => {
+const EventCard = ({ event, topPos, height, leftPos, width, onEdit, onDelete, onOpen, onStatusChange, canEdit, canDelete, isFocused, anyFocused }) => {
   const [menuOpen, setMenuOpen] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
 
@@ -168,9 +168,11 @@ const EventCard = ({ event, topPos, height, leftPos, width, onEdit, onDelete, on
                     </div>
                   )}
                   <div style={{ height: '1px', background: 'var(--border-light)', margin: '4px 0' }} />
-                  <div className="context-menu-item delete" onClick={() => { onDelete(); setMenuOpen(false); }}>
-                    <Trash2 size={14} /> Delete Task
-                  </div>
+                  {canDelete && (
+                    <div className="context-menu-item delete" onClick={() => { onDelete(); setMenuOpen(false); }}>
+                      <Trash2 size={14} /> Delete Task
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -485,6 +487,8 @@ const TaskBoard = () => {
                   ? { background: slot.color }
                   : {};
 
+                const canDeleteTask = currentUser?.id === 'PhucMKT' || currentUser?.id === slot.categoryId;
+
                 return (
                   <EventCard
                     key={slot.id}
@@ -495,6 +499,7 @@ const TaskBoard = () => {
                     onOpen={() => openEditModal(slot)}
                     onStatusChange={(newStatus) => updateEvent({ ...slot, status: newStatus })}
                     canEdit={canEdit}
+                    canDelete={canDeleteTask}
                     isFocused={focusedTaskId === slot.id}
                     anyFocused={focusedTaskId !== null}
                   />
