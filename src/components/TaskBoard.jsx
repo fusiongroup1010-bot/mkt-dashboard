@@ -5,6 +5,7 @@ import { enUS } from 'date-fns/locale';
 import { DayPicker } from 'react-day-picker';
 import 'react-day-picker/dist/style.css';
 import { useEvents, CATEGORY_MAP, DEPARTMENTS } from '../context/EventContext';
+import { useAuth, EMPLOYEES } from '../context/AuthContext';
 import ReportExport from './ReportExport';
 import ExportModal from './ExportModal';
 
