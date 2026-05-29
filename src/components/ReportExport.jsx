@@ -27,11 +27,12 @@ const ReportExport = ({ type, format: exportFormatProp = 'pdf', startDate: propS
   const startStr = format(startDate, 'yyyy-MM-dd');
   const endStr   = format(endDate,   'yyyy-MM-dd');
   
-  let periodStr = `Từ ${format(startDate, 'dd-MM-yyyy')} đến ${format(endDate, 'dd-MM-yyyy')}`;
+  let periodStr = `From ${format(startDate, 'dd-MM-yyyy')} to ${format(endDate, 'dd-MM-yyyy')}`;
   if (type === 'daily') {
-    periodStr = `Ngày ${format(startDate, 'dd-MM-yyyy')} (Thứ ${startDate.getDay() === 0 ? 'Chủ nhật' : startDate.getDay() + 1})`;
+    const daysOfWeek = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    periodStr = `${format(startDate, 'dd-MM-yyyy')} (${daysOfWeek[startDate.getDay()]})`;
   } else if (type === 'monthly') {
-    periodStr = `Tháng ${format(startDate, 'MM-yyyy')} (Từ ${format(startDate, 'dd-MM-yyyy')} đến ${format(endDate, 'dd-MM-yyyy')})`;
+    periodStr = `${format(startDate, 'MM-yyyy')} (From ${format(startDate, 'dd-MM-yyyy')} to ${format(endDate, 'dd-MM-yyyy')})`;
   }
 
   // Filter tasks that overlap the period
@@ -69,7 +70,7 @@ const ReportExport = ({ type, format: exportFormatProp = 'pdf', startDate: propS
   // Active employees (those with at least 1 task in period)
   const activeEmployees = employees.filter(e => e.id.startsWith('NVMKT') || e.id === 'PhucMKT');
 
-  const chartTitleSuffix = type === 'daily' ? `(Ngày ${format(startDate, 'dd-MM-yyyy')})` : type === 'monthly' ? `(Tháng ${format(startDate, 'MM-yyyy')})` : '';
+  const chartTitleSuffix = type === 'daily' ? `(${format(startDate, 'dd-MM-yyyy')})` : type === 'monthly' ? `(${format(startDate, 'MM-yyyy')})` : '';
 
   // Chart 1: Task count per employee (Bar)
   const empTaskCounts = activeEmployees.map(emp => ({
@@ -81,7 +82,7 @@ const ReportExport = ({ type, format: exportFormatProp = 'pdf', startDate: propS
   const chart1Data = {
     labels: empTaskCounts.map(x => x.name),
     datasets: [{
-      label: 'Số công việc',
+      label: 'Number of Tasks',
       data: empTaskCounts.map(x => x.count),
       backgroundColor: empTaskCounts.map((_, i) => PALETTE[i % PALETTE.length]),
       borderRadius: 4,
@@ -90,7 +91,7 @@ const ReportExport = ({ type, format: exportFormatProp = 'pdf', startDate: propS
 
   // Chart 2: Pie – overall done vs not done
   const chart2Data = {
-    labels: ['Hoàn thành', 'Đang xử lý', 'Chưa làm'],
+    labels: ['Completed', 'In Progress', 'To Do'],
     datasets: [{
       data: [doneTasks, inProgressTasks, todoTasks],
       backgroundColor: ['#4ade80', '#fbbf24', '#e2e8f0'],
@@ -108,7 +109,7 @@ const ReportExport = ({ type, format: exportFormatProp = 'pdf', startDate: propS
   const chart3Data = {
     labels: empRates.map(x => x.name),
     datasets: [{
-      label: 'Tỷ lệ hoàn thành (%)',
+      label: 'Completion Rate (%)',
       data: empRates.map(x => x.rate),
       backgroundColor: empRates.map((_, i) => '#60a5fa'),
       borderRadius: 4,
@@ -116,9 +117,9 @@ const ReportExport = ({ type, format: exportFormatProp = 'pdf', startDate: propS
   };
 
   const getStatusText = (status) => {
-    if (status === 'done') return 'Hoàn thành';
-    if (status === 'in-progress') return 'Đang xử lý (In-progress)';
-    return 'Chưa làm';
+    if (status === 'done') return 'Completed';
+    if (status === 'in-progress') return 'In Progress';
+    return 'To Do';
   };
 
   const exportToWord = () => {
@@ -150,7 +151,7 @@ const ReportExport = ({ type, format: exportFormatProp = 'pdf', startDate: propS
             xmlns:w='urn:schemas-microsoft-com:office:word' 
             xmlns='http://www.w3.org/TR/REC-html40'>
       <head>
-        <title>Bao Cao MKT HN</title>
+        <title>MKT HN Report</title>
         <!--[if gte mso 9]>
         <xml>
           <w:WordDocument>
@@ -177,11 +178,11 @@ const ReportExport = ({ type, format: exportFormatProp = 'pdf', startDate: propS
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    let typeName = 'Tuan';
-    if (type === 'daily') typeName = 'Ngay';
-    if (type === 'monthly') typeName = 'Thang';
-    if (type === 'custom') typeName = 'TuyChinh';
-    link.download = `BaoCao_${typeName}_MKT_HN_${format(startDate, 'dd-MM-yyyy')}.doc`;
+    let typeName = 'Weekly';
+    if (type === 'daily') typeName = 'Daily';
+    if (type === 'monthly') typeName = 'Monthly';
+    if (type === 'custom') typeName = 'Custom';
+    link.download = `Report_${typeName}_MKT_HN_${format(startDate, 'dd-MM-yyyy')}.doc`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -226,41 +227,42 @@ const ReportExport = ({ type, format: exportFormatProp = 'pdf', startDate: propS
 
         {/* Header */}
         <div style={S.header}>
-          <h1 style={S.h1}>CÔNG TY TNHH FUSION GROUP</h1>
-          <h1 style={S.h1}>PHÒNG MARKETING (MKT)</h1>
-          <h2 style={S.h2}>BÁO CÁO {type === 'daily' ? 'NGÀY' : type === 'weekly' ? 'TUẦN' : type === 'monthly' ? 'THÁNG' : 'TÙY CHỈNH'} – PHÒNG MKT</h2>
+          <h1 style={S.h1}>FUSION GROUP CO., LTD</h1>
+          <h1 style={S.h1}>MARKETING DEPARTMENT (MKT)</h1>
+          <h2 style={S.h2}>{type === 'daily' ? 'DAILY' : type === 'weekly' ? 'WEEKLY' : type === 'monthly' ? 'MONTHLY' : 'CUSTOM'} REPORT – MKT DEPARTMENT</h2>
           <p style={S.sub}>{periodStr}</p>
         </div>
 
         {/* Section I */}
-        <div style={S.secTitle}>I. TỔNG QUAN</div>
+        <div style={S.secTitle}>I. OVERVIEW</div>
         <table style={S.table}>
           <thead>
             <tr>
-              <th style={{ ...S.th, width: '50%' }}>Chỉ tiêu</th>
-              <th style={{ ...S.th, width: '50%' }}>Giá trị</th>
+              <th style={{ ...S.th, width: '50%' }}>Metric</th>
+              <th style={{ ...S.th, width: '50%' }}>Value</th>
             </tr>
           </thead>
           <tbody>
-            <tr><td style={S.tdL}>Tổng số công việc trong {type === 'daily' ? 'ngày' : type === 'weekly' ? 'tuần' : 'tháng'}</td><td style={S.td}>{totalTasks}</td></tr>
-            <tr><td style={S.tdL}>Đã hoàn thành</td><td style={S.td}>{doneTasks}</td></tr>
-            <tr><td style={S.tdL}>Đang xử lý (In-progress)</td><td style={S.td}>{inProgressTasks}</td></tr>
-            <tr><td style={S.tdL}>Chưa bắt đầu</td><td style={S.td}>{todoTasks}</td></tr>
-            <tr><td style={S.tdL}>Số công việc quá hạn</td><td style={S.td}>{overdueTasks}</td></tr>
-            <tr><td style={S.tdL}>Tỷ lệ hoàn thành (%)</td><td style={S.td}>{completionRate}%</td></tr>
-            <tr><td style={S.tdL}>Số Campaign đang triển khai</td><td style={S.td}>{activeCampaigns}</td></tr>
-            <tr><td style={S.tdL}>Tiến độ Campaign trung bình (%)</td><td style={S.td}>{avgCampaignProgress}%</td></tr>
+            <tr><td style={S.tdL}>Total tasks in the {type === 'daily' ? 'day' : type === 'weekly' ? 'week' : 'month'}</td><td style={S.td}>{totalTasks}</td></tr>
+            <tr><td style={S.tdL}>Completed</td><td style={S.td}>{doneTasks}</td></tr>
+            <tr><td style={S.tdL}>In Progress</td><td style={S.td}>{inProgressTasks}</td></tr>
+            <tr><td style={S.tdL}>To Do / Not Started</td><td style={S.td}>{todoTasks}</td></tr>
+            <tr><td style={S.tdL}>Overdue Tasks</td><td style={S.td}>{overdueTasks}</td></tr>
+            <tr><td style={S.tdL}>Completion Rate (%)</td><td style={S.td}>{completionRate}%</td></tr>
+            <tr><td style={S.tdL}>Active Campaigns</td><td style={S.td}>{activeCampaigns}</td></tr>
+            <tr><td style={S.tdL}>Average Campaign Progress (%)</td><td style={S.td}>{avgCampaignProgress}%</td></tr>
           </tbody>
         </table>
 
         {/* Chart 1 */}
         <div style={{ pageBreakInside: 'avoid', marginBottom: '24px' }}>
-          <div style={S.chartTitle}>Biểu đồ 1 - Số lượng công việc theo nhân viên {chartTitleSuffix}</div>
+          <div style={S.chartTitle}>Chart 1 - Number of Tasks by Employee {chartTitleSuffix}</div>
           <div style={{ width: '100%', height: '240px' }}>
             <Bar
               data={chart1Data}
               options={{
                 responsive: true, maintainAspectRatio: false,
+                layout: { padding: { top: 25, left: 10, right: 10, bottom: 5 } },
                 plugins: { 
                   legend: { display: false },
                   datalabels: { anchor: 'end', align: 'end', color: '#1e3a8a', font: { weight: 'bold' } }
@@ -272,6 +274,7 @@ const ReportExport = ({ type, format: exportFormatProp = 'pdf', startDate: propS
                   },
                   y: { 
                     beginAtZero: true, 
+                    suggestedMax: Math.max(...empTaskCounts.map(x => x.count), 0) + 1,
                     ticks: { stepSize: 0.25 },
                     grid: { display: true, drawBorder: true, color: '#f1f5f9' }
                   } 
@@ -283,7 +286,7 @@ const ReportExport = ({ type, format: exportFormatProp = 'pdf', startDate: propS
 
         {/* Chart 2 */}
         <div style={{ pageBreakInside: 'avoid', marginBottom: '24px' }}>
-          <div style={S.chartTitle}>Biểu đồ 2 - Tỷ lệ hoàn thành tổng thể {chartTitleSuffix}</div>
+          <div style={S.chartTitle}>Chart 2 - Overall Completion Rate {chartTitleSuffix}</div>
           <div style={{ width: '300px', height: '200px', margin: '0 auto' }}>
             <Pie 
               data={chart2Data} 
@@ -310,7 +313,7 @@ const ReportExport = ({ type, format: exportFormatProp = 'pdf', startDate: propS
 
         {/* Chart 3 */}
         <div style={{ pageBreakBefore: 'always', marginTop: '20px' }}>
-          <div style={S.chartTitle}>Biểu đồ 3 - Tỷ lệ hoàn thành theo nhân viên {chartTitleSuffix}</div>
+          <div style={S.chartTitle}>Chart 3 - Completion Rate by Employee {chartTitleSuffix}</div>
           <div style={{ width: '100%', height: `${Math.max(200, empRates.length * 40)}px` }}>
             <Bar
               data={chart3Data}
@@ -333,12 +336,12 @@ const ReportExport = ({ type, format: exportFormatProp = 'pdf', startDate: propS
 
         {/* Section II */}
         <div style={{ pageBreakBefore: 'always', marginTop: '20px' }} />
-        <div style={S.secTitle}>II. CHI TIẾT CÔNG VIỆC</div>
+        <div style={S.secTitle}>II. WORK DETAILS</div>
         
         {/* A. CÔNG VIỆC DAILY */}
         {dailyTasks.length > 0 && (
           <div style={{ marginBottom: '24px' }}>
-            <div style={S.secSubTitle}>A. CÔNG VIỆC DAILY</div>
+            <div style={S.secSubTitle}>A. DAILY TASKS</div>
             {activeEmployees.map(emp => {
               const empDailyTasks = dailyTasks.filter(e => e.categoryId === emp.id);
               if (empDailyTasks.length === 0) return null;
@@ -349,16 +352,16 @@ const ReportExport = ({ type, format: exportFormatProp = 'pdf', startDate: propS
                     <thead>
                       <tr>
                         <th colSpan="6" style={{ ...S.th, textAlign: 'left', background: '#dbeafe', color: '#1e3a8a', fontSize: '13px' }}>
-                          Nhân viên: {getDisplayName(emp.id)}
+                          Employee: {getDisplayName(emp.id)}
                         </th>
                       </tr>
                       <tr>
-                        <th style={{ ...S.th, width: '6%' }}>STT</th>
-                        <th style={{ ...S.th, width: '16%' }}>Ngày</th>
-                        <th style={{ ...S.th, width: '16%' }}>Thời gian</th>
-                        <th style={{ ...S.th, width: '40%' }}>Nội dung công việc</th>
-                        <th style={{ ...S.th, width: '14%' }}>Tình trạng</th>
-                        <th style={{ ...S.th, width: '8%' }}>Ghi chú</th>
+                        <th style={{ ...S.th, width: '6%' }}>No.</th>
+                        <th style={{ ...S.th, width: '16%' }}>Date</th>
+                        <th style={{ ...S.th, width: '16%' }}>Time</th>
+                        <th style={{ ...S.th, width: '40%' }}>Task Content</th>
+                        <th style={{ ...S.th, width: '14%' }}>Status</th>
+                        <th style={{ ...S.th, width: '8%' }}>Notes</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -383,7 +386,7 @@ const ReportExport = ({ type, format: exportFormatProp = 'pdf', startDate: propS
         {/* B. CÔNG VIỆC THEO CAMPAIGN */}
         {campTasks.length > 0 && (
           <div style={{ marginBottom: '24px' }}>
-            <div style={S.secSubTitle}>B. CÔNG VIỆC THEO CAMPAIGN</div>
+            <div style={S.secSubTitle}>B. CAMPAIGN TASKS</div>
             {activeEmployees.map(emp => {
               const empCampTasks = campTasks.filter(e => e.categoryId === emp.id);
               if (empCampTasks.length === 0) return null;
@@ -394,17 +397,17 @@ const ReportExport = ({ type, format: exportFormatProp = 'pdf', startDate: propS
                     <thead>
                       <tr>
                         <th colSpan="7" style={{ ...S.th, textAlign: 'left', background: '#dbeafe', color: '#1e3a8a', fontSize: '13px' }}>
-                          Nhân viên: {getDisplayName(emp.id)}
+                          Employee: {getDisplayName(emp.id)}
                         </th>
                       </tr>
                       <tr>
-                        <th style={{ ...S.th, width: '6%' }}>STT</th>
-                        <th style={{ ...S.th, width: '20%' }}>Tên Campaign</th>
-                        <th style={{ ...S.th, width: '24%' }}>Mục tiêu</th>
-                        <th style={{ ...S.th, width: '18%' }}>Mốc thời gian</th>
-                        <th style={{ ...S.th, width: '12%' }}>Tiến độ (%)</th>
-                        <th style={{ ...S.th, width: '12%' }}>Tình trạng</th>
-                        <th style={{ ...S.th, width: '8%' }}>Ghi chú</th>
+                        <th style={{ ...S.th, width: '6%' }}>No.</th>
+                        <th style={{ ...S.th, width: '20%' }}>Campaign Name</th>
+                        <th style={{ ...S.th, width: '24%' }}>Objectives</th>
+                        <th style={{ ...S.th, width: '18%' }}>Timeline</th>
+                        <th style={{ ...S.th, width: '12%' }}>Progress (%)</th>
+                        <th style={{ ...S.th, width: '12%' }}>Status</th>
+                        <th style={{ ...S.th, width: '8%' }}>Notes</th>
                       </tr>
                     </thead>
                     <tbody>
