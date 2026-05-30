@@ -17,6 +17,18 @@ ChartJS.register(CategoryScale, LinearScale, BarElement, ArcElement, Tooltip, Le
 // Saturated, bold premium palette (600-level, completely eliminating any blurry/fade-out look)
 const PALETTE = ['#4f46e5', '#f59e0b', '#10b981', '#ec4899', '#8b5cf6', '#f97316', '#0ea5e9', '#ef4444'];
 
+const whiteBackgroundPlugin = {
+  id: 'whiteBackground',
+  beforeDraw: (chart) => {
+    const ctx = chart.canvas.getContext('2d');
+    ctx.save();
+    ctx.globalCompositeOperation = 'destination-over';
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, chart.width, chart.height);
+    ctx.restore();
+  }
+};
+
 const ReportExport = ({ type, format: exportFormatProp = 'pdf', startDate: propStartDate, endDate: propEndDate, events, employees, onClose }) => {
   const reportRef = useRef(null);
 
@@ -260,6 +272,7 @@ const ReportExport = ({ type, format: exportFormatProp = 'pdf', startDate: propS
           <div style={{ width: '100%', height: '240px' }}>
             <Bar
               data={chart1Data}
+              plugins={[whiteBackgroundPlugin]}
               options={{
                 responsive: true, maintainAspectRatio: false,
                 layout: { padding: { top: 25, left: 10, right: 10, bottom: 5 } },
@@ -290,6 +303,7 @@ const ReportExport = ({ type, format: exportFormatProp = 'pdf', startDate: propS
           <div style={{ width: '300px', height: '200px', margin: '0 auto' }}>
             <Pie 
               data={chart2Data} 
+              plugins={[whiteBackgroundPlugin]}
               options={{ 
                 responsive: true, maintainAspectRatio: false,
                 plugins: {
@@ -317,6 +331,7 @@ const ReportExport = ({ type, format: exportFormatProp = 'pdf', startDate: propS
           <div style={{ width: '100%', height: `${Math.max(200, empRates.length * 40)}px` }}>
             <Bar
               data={chart3Data}
+              plugins={[whiteBackgroundPlugin]}
               options={{
                 indexAxis: 'y',
                 responsive: true, maintainAspectRatio: false,
