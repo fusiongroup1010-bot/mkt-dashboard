@@ -58,6 +58,7 @@ const TaskModal = () => {
     duration: 1,
     taskCategory: 'daily',
     sendToDepartments: [],
+    progress: 0,
   };
 
   const [form, setForm] = useState(defaultForm);
@@ -79,6 +80,7 @@ const TaskModal = () => {
         duration:   currentEvent.duration   || 1,
         taskCategory: currentEvent.taskCategory || 'daily',
         sendToDepartments: currentEvent.sendToDepartments || [],
+        progress:   currentEvent.progress   || 0,
       });
     } else {
       // Always compute today fresh — avoids stale date if component mounted on a previous day
@@ -97,6 +99,7 @@ const TaskModal = () => {
         duration: 1,
         taskCategory: 'daily',
         sendToDepartments: [],
+        progress: 0,
       });
     }
   }, [currentEvent, isModalOpen]);
@@ -350,6 +353,19 @@ const TaskModal = () => {
               </select>
             </div>
           </div>
+
+          {/* Progress */}
+          {form.status === 'in-progress' && (
+            <div className="form-group" style={{ marginBottom: '16px' }}>
+              <label style={labelStyle}>Progress (%)</label>
+              <input
+                type="number" min="0" max="100"
+                value={form.progress}
+                onChange={e => set('progress', parseInt(e.target.value) || 0)}
+                style={inputStyle}
+              />
+            </div>
+          )}
 
           {/* Dates */}
           <div style={{ display: 'grid', gridTemplateColumns: form.taskCategory === 'campaign' || !isWeekCalendar ? '1fr 1fr' : '1fr', gap: '16px', marginBottom: '16px' }}>

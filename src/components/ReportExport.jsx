@@ -75,7 +75,7 @@ const ReportExport = ({ type, format: exportFormatProp = 'pdf', startDate: propS
   let totalCampaignProgress = 0;
   campaignTasks.forEach(c => {
     if (c.status === 'done') totalCampaignProgress += 100;
-    else if (c.status === 'in-progress') totalCampaignProgress += 50;
+    else if (c.status === 'in-progress') totalCampaignProgress += (c.progress || 0);
   });
   const avgCampaignProgress = activeCampaigns > 0 ? (totalCampaignProgress / activeCampaigns).toFixed(1) : 0;
 
@@ -353,103 +353,90 @@ const ReportExport = ({ type, format: exportFormatProp = 'pdf', startDate: propS
         <div style={{ pageBreakBefore: 'always', marginTop: '20px' }} />
         <div style={S.secTitle}>II. WORK DETAILS</div>
         
-        {/* A. CÔNG VIỆC DAILY */}
-        {dailyTasks.length > 0 && (
-          <div style={{ marginBottom: '24px' }}>
-            <div style={S.secSubTitle}>A. DAILY TASKS</div>
-            {activeEmployees.map(emp => {
-              const empDailyTasks = dailyTasks.filter(e => e.categoryId === emp.id);
-              if (empDailyTasks.length === 0) return null;
-              
-              return (
-                <div key={emp.id} style={{ marginBottom: '16px', pageBreakInside: 'avoid' }}>
-                  <table style={S.table}>
-                    <thead>
-                      <tr>
-                        <th colSpan="6" style={{ ...S.th, textAlign: 'left', background: '#dbeafe', color: '#1e3a8a', fontSize: '13px' }}>
-                          Employee: {getDisplayName(emp.id)}
-                        </th>
-                      </tr>
-                      <tr>
-                        <th style={{ ...S.th, width: '6%' }}>No.</th>
-                        <th style={{ ...S.th, width: '16%' }}>Date</th>
-                        <th style={{ ...S.th, width: '16%' }}>Time</th>
-                        <th style={{ ...S.th, width: '40%' }}>Task Content</th>
-                        <th style={{ ...S.th, width: '14%' }}>Status</th>
-                        <th style={{ ...S.th, width: '8%' }}>Notes</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {empDailyTasks.map((task, i) => (
-                        <tr key={task.id}>
-                          <td style={S.td}>{i + 1}</td>
-                          <td style={S.td}>{format(new Date(task.dueDate), 'dd/MM/yyyy')}</td>
-                          <td style={S.td}>{task.dueTime}</td>
-                          <td style={{ ...S.tdL, fontWeight: 'normal' }}>{task.title}</td>
-                          <td style={{ ...S.td, color: '#111' }}>{getStatusText(task.status)}</td>
-                          <td style={{ ...S.tdL, fontWeight: 'normal', textAlign: 'center' }}>-</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              );
-            })}
-          </div>
-        )}
+        <div style={{ marginBottom: '24px' }}>
+          {activeEmployees.map((emp, empIndex) => {
+            const empDailyTasks = dailyTasks.filter(e => e.categoryId === emp.id);
+            const empCampTasks = campTasks.filter(e => e.categoryId === emp.id);
+            
+            if (empDailyTasks.length === 0 && empCampTasks.length === 0) return null;
 
-        {/* B. CÔNG VIỆC THEO CAMPAIGN */}
-        {campTasks.length > 0 && (
-          <div style={{ marginBottom: '24px' }}>
-            <div style={S.secSubTitle}>B. CAMPAIGN TASKS</div>
-            {activeEmployees.map(emp => {
-              const empCampTasks = campTasks.filter(e => e.categoryId === emp.id);
-              if (empCampTasks.length === 0) return null;
-              
-              return (
-                <div key={emp.id} style={{ marginBottom: '16px', pageBreakInside: 'avoid' }}>
-                  <table style={S.table}>
-                    <thead>
-                      <tr>
-                        <th colSpan="7" style={{ ...S.th, textAlign: 'left', background: '#dbeafe', color: '#1e3a8a', fontSize: '13px' }}>
-                          Employee: {getDisplayName(emp.id)}
-                        </th>
-                      </tr>
-                      <tr>
-                        <th style={{ ...S.th, width: '6%' }}>No.</th>
-                        <th style={{ ...S.th, width: '20%' }}>Campaign Name</th>
-                        <th style={{ ...S.th, width: '24%' }}>Objectives</th>
-                        <th style={{ ...S.th, width: '18%' }}>Timeline</th>
-                        <th style={{ ...S.th, width: '12%' }}>Progress (%)</th>
-                        <th style={{ ...S.th, width: '12%' }}>Status</th>
-                        <th style={{ ...S.th, width: '8%' }}>Notes</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {empCampTasks.map((task, i) => {
-                        const progress = task.status === 'done' ? 100 : task.status === 'in-progress' ? 50 : 0;
-                        const dateStr = task.endDate && task.endDate !== task.dueDate
-                          ? `${format(new Date(task.dueDate), 'dd/MM/yyyy')} - \n${format(new Date(task.endDate), 'dd/MM/yyyy')}`
-                          : format(new Date(task.dueDate), 'dd/MM/yyyy');
-                        return (
+            return (
+              <div key={emp.id} style={{ marginBottom: '32px' }}>
+                <div style={{ ...S.secSubTitle, color: '#1e3a8a', fontSize: '14px', borderBottom: '2px solid #1e3a8a', paddingBottom: '4px' }}>
+                  {empIndex + 1}. Employee: {getDisplayName(emp.id)}
+                </div>
+
+                {empDailyTasks.length > 0 && (
+                  <div style={{ marginTop: '12px', pageBreakInside: 'avoid' }}>
+                    <div style={{ fontWeight: 'bold', fontSize: '12px', marginBottom: '8px', color: '#333' }}>- Daily Tasks</div>
+                    <table style={S.table}>
+                      <thead>
+                        <tr>
+                          <th style={{ ...S.th, width: '6%' }}>No.</th>
+                          <th style={{ ...S.th, width: '16%' }}>Date</th>
+                          <th style={{ ...S.th, width: '16%' }}>Time</th>
+                          <th style={{ ...S.th, width: '40%' }}>Task Content</th>
+                          <th style={{ ...S.th, width: '14%' }}>Status</th>
+                          <th style={{ ...S.th, width: '8%' }}>Notes</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {empDailyTasks.map((task, i) => (
                           <tr key={task.id}>
                             <td style={S.td}>{i + 1}</td>
+                            <td style={S.td}>{format(new Date(task.dueDate), 'dd/MM/yyyy')}</td>
+                            <td style={S.td}>{task.dueTime}</td>
                             <td style={{ ...S.tdL, fontWeight: 'normal' }}>{task.title}</td>
-                            <td style={{ ...S.tdL, fontWeight: 'normal' }}>{task.description || '-'}</td>
-                            <td style={{ ...S.td, whiteSpace: 'pre-wrap' }}>{dateStr}</td>
-                            <td style={S.td}>{progress}%</td>
                             <td style={{ ...S.td, color: '#111' }}>{getStatusText(task.status)}</td>
                             <td style={{ ...S.tdL, fontWeight: 'normal', textAlign: 'center' }}>-</td>
                           </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              );
-            })}
-          </div>
-        )}
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+
+                {empCampTasks.length > 0 && (
+                  <div style={{ marginTop: '12px', pageBreakInside: 'avoid' }}>
+                    <div style={{ fontWeight: 'bold', fontSize: '12px', marginBottom: '8px', color: '#333' }}>- Campaign Tasks</div>
+                    <table style={S.table}>
+                      <thead>
+                        <tr>
+                          <th style={{ ...S.th, width: '6%' }}>No.</th>
+                          <th style={{ ...S.th, width: '20%' }}>Campaign Name</th>
+                          <th style={{ ...S.th, width: '24%' }}>Objectives</th>
+                          <th style={{ ...S.th, width: '18%' }}>Timeline</th>
+                          <th style={{ ...S.th, width: '12%' }}>Progress (%)</th>
+                          <th style={{ ...S.th, width: '12%' }}>Status</th>
+                          <th style={{ ...S.th, width: '8%' }}>Notes</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {empCampTasks.map((task, i) => {
+                          const progress = task.status === 'done' ? 100 : task.status === 'in-progress' ? (task.progress || 0) : 0;
+                          const dateStr = task.endDate && task.endDate !== task.dueDate
+                            ? `${format(new Date(task.dueDate), 'dd/MM/yyyy')} - \n${format(new Date(task.endDate), 'dd/MM/yyyy')}`
+                            : format(new Date(task.dueDate), 'dd/MM/yyyy');
+                          return (
+                            <tr key={task.id}>
+                              <td style={S.td}>{i + 1}</td>
+                              <td style={{ ...S.tdL, fontWeight: 'normal' }}>{task.title}</td>
+                              <td style={{ ...S.tdL, fontWeight: 'normal' }}>{task.description || '-'}</td>
+                              <td style={{ ...S.td, whiteSpace: 'pre-wrap' }}>{dateStr}</td>
+                              <td style={S.td}>{progress}%</td>
+                              <td style={{ ...S.td, color: '#111' }}>{getStatusText(task.status)}</td>
+                              <td style={{ ...S.tdL, fontWeight: 'normal', textAlign: 'center' }}>-</td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
 
       </div>
     </div>
