@@ -1,4 +1,4 @@
-import React, { createContext, useState, useContext, useEffect } from 'react';
+import React, { createContext, useState, useContext, useEffect, useRef } from 'react';
 
 /* ── MKT Members as calendar categories ── */
 // Static named members (always visible)
@@ -62,6 +62,7 @@ export const EventProvider = ({ children }) => {
   const COLLECTION = 'mkt_deadline_items';
   const LOCAL_FB_KEY   = 'mkt_last_known_fb_data';
   const LOCAL_CHNG_KEY = 'mkt_local_changes';
+  const syncingIds = useRef(new Set());
 
   const loadMergedState = (fbData) => {
     const fallbackFbStr = localStorage.getItem(LOCAL_FB_KEY);
@@ -168,15 +169,15 @@ export const EventProvider = ({ children }) => {
     const localStr = localStorage.getItem(LOCAL_CHNG_KEY);
     if (!localStr) return;
     const localChanges = JSON.parse(localStr);
-    const keys = Object.keys(localChanges);
+    const keys = Object.keys(localChanges).filter(id => !syncingIds.current.has(id));
     if (keys.length === 0) return;
     keys.forEach(id => {
       const change = localChanges[id];
-      clearChangeLocal(id);
+      syncingIds.current.add(id);
       if (change === null) {
-        deleteDoc(doc(db, COLLECTION, id)).catch(() => saveChangeLocal(id, null));
+        deleteDoc(doc(db, COLLECTION, id)).catch(() => { syncingIds.current.delete(id); });
       } else {
-        setDoc(doc(db, COLLECTION, id), change, { merge: true }).catch(() => saveChangeLocal(id, change));
+        setDoc(doc(db, COLLECTION, id), change, { merge: true }).catch(() => { syncingIds.current.delete(id); });
       }
     });
   };
@@ -186,6 +187,35 @@ export const EventProvider = ({ children }) => {
     const unsubscribe = onSnapshot(q,
       (snapshot) => {
         const fbData = snapshot.docs.map(d => ({ ...d.data(), id: d.id }));
+        
+        // Confirm writes: remove from local cache and syncingIds once it matches Firestore
+        const localStr = localStorage.getItem(LOCAL_CHNG_KEY);
+        if (localStr) {
+          const localChanges = JSON.parse(localStr);
+          let modified = false;
+          const fbDataIds = new Set(fbData.map(i => i.id));
+          
+          Array.from(syncingIds.current).forEach(id => {
+            const change = localChanges[id];
+            // If it was a delete and is missing from fbData
+            if (change === null && !fbDataIds.has(id)) {
+              syncingIds.current.delete(id);
+              delete localChanges[id];
+              modified = true;
+            } 
+            // If it was an add/update and is present in fbData
+            else if (change !== null && fbDataIds.has(id)) {
+              syncingIds.current.delete(id);
+              delete localChanges[id];
+              modified = true;
+            }
+          });
+          
+          if (modified) {
+            localStorage.setItem(LOCAL_CHNG_KEY, JSON.stringify(localChanges));
+          }
+        }
+
         setItems(loadMergedState(fbData));
         syncPendingChangesToCloud();
       },
@@ -201,23 +231,26 @@ export const EventProvider = ({ children }) => {
   const addEvent = async (item) => {
     const newId = `item-${Date.now()}`;
     const newItem = { ...item, id: newId };
+    syncingIds.current.add(newId);
     saveChangeLocal(newId, newItem);
     setIsModalOpen(false);
-    try { await setDoc(doc(db, COLLECTION, newId), newItem); clearChangeLocal(newId); } catch (e) { console.warn(e); }
+    try { await setDoc(doc(db, COLLECTION, newId), newItem); } catch (e) { console.warn(e); syncingIds.current.delete(newId); }
   };
 
   const updateEvent = async (updated) => {
+    syncingIds.current.add(updated.id);
     saveChangeLocal(updated.id, updated);
     setIsModalOpen(false);
     setCurrentEvent(null);
-    try { await setDoc(doc(db, COLLECTION, updated.id), updated, { merge: true }); clearChangeLocal(updated.id); } catch (e) { console.warn(e); }
+    try { await setDoc(doc(db, COLLECTION, updated.id), updated, { merge: true }); } catch (e) { console.warn(e); syncingIds.current.delete(updated.id); }
   };
 
   const deleteEvent = async (id) => {
+    syncingIds.current.add(id);
     saveChangeLocal(id, null);
     setIsModalOpen(false);
     setCurrentEvent(null);
-    try { await deleteDoc(doc(db, COLLECTION, id)); clearChangeLocal(id); } catch (e) { console.warn(e); }
+    try { await deleteDoc(doc(db, COLLECTION, id)); } catch (e) { console.warn(e); syncingIds.current.delete(id); }
   };
 
   const changeStatus = async (id, status) => {
@@ -225,13 +258,16 @@ export const EventProvider = ({ children }) => {
       const target = prev.find(i => i.id === id);
       if (!target) return prev;
       const upd = { ...target, status, updatedBy: currentUser ? currentUser.name : 'Unknown', updatedAt: new Date().toISOString() };
+      
       Promise.resolve().then(() => {
+        syncingIds.current.add(id);
         const localStr = localStorage.getItem(LOCAL_CHNG_KEY);
         const localChanges = localStr ? JSON.parse(localStr) : {};
         localChanges[id] = upd;
         localStorage.setItem(LOCAL_CHNG_KEY, JSON.stringify(localChanges));
+        setDoc(doc(db, COLLECTION, id), upd, { merge: true }).catch((e) => { console.warn(e); syncingIds.current.delete(id); });
       });
-      setDoc(doc(db, COLLECTION, id), upd, { merge: true }).then(() => clearChangeLocal(id)).catch(console.warn);
+      
       return prev.map(i => i.id === id ? upd : i);
     });
   };

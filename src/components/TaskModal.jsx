@@ -63,8 +63,10 @@ const TaskModal = () => {
 
   const [form, setForm] = useState(defaultForm);
   const [isDeptDropdownOpen, setIsDeptDropdownOpen] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   React.useEffect(() => {
+    setSubmitting(false);
     if (currentEvent) {
       setForm({
         title:      currentEvent.title      || '',
@@ -130,9 +132,10 @@ const TaskModal = () => {
     });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form.title.trim()) return;
+    if (!form.title.trim() || submitting) return;
+    setSubmitting(true);
     const cat = CATEGORY_MAP[form.categoryId] || (DEPARTMENTS.all[0]);
     const itemData = {
       ...form,
@@ -143,10 +146,11 @@ const TaskModal = () => {
       updatedAt: new Date().toISOString(),
     };
     if (currentEvent) {
-      updateEvent({ ...itemData, id: currentEvent.id });
+      await updateEvent({ ...itemData, id: currentEvent.id });
     } else {
-      addEvent(itemData);
+      await addEvent(itemData);
     }
+    setSubmitting(false);
   };
 
   // categoryMap comes from live context now — defined above in const currentCategories
@@ -402,14 +406,21 @@ const TaskModal = () => {
             {canDelete && (
               <button
                 type="button"
-                style={{ marginRight: 'auto', background: 'var(--pink-pastel)', color: 'var(--pink-accent)', padding: '10px 20px', borderRadius: '12px', border: 'none', fontWeight: '800', cursor: 'pointer' }}
-                onClick={() => deleteEvent(currentEvent.id)}
+                style={{ marginRight: 'auto', background: 'var(--pink-pastel)', color: 'var(--pink-accent)', padding: '10px 20px', borderRadius: '12px', border: 'none', fontWeight: '800', cursor: 'pointer', opacity: submitting ? 0.5 : 1 }}
+                onClick={() => {
+                  if (submitting) return;
+                  setSubmitting(true);
+                  deleteEvent(currentEvent.id);
+                }}
+                disabled={submitting}
               >
                 Delete
               </button>
             )}
             <button type="button" className="btn-secondary" onClick={() => setIsModalOpen(false)}>Cancel</button>
-            <button type="submit" className="btn-primary">{currentEvent ? 'Update' : 'Add Task'}</button>
+            <button type="submit" className="btn-primary" disabled={submitting}>
+              {submitting ? 'Saving...' : (currentEvent ? 'Update' : 'Add Task')}
+            </button>
           </div>
         </form>
       </div>
