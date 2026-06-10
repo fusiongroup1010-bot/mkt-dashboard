@@ -276,6 +276,7 @@ const TaskBoard = () => {
   const [expandedDept, setExpandedDept] = useState(null);
   const [focusedTaskId, setFocusedTaskId] = useState(null);
   const [summarySidebarOpen, setSummarySidebarOpen] = useState(true);
+  const [is24HourView, setIs24HourView] = useState(false);
 
   const scrollToTask = (id) => {
     const el = document.getElementById(`event-${id}`);
@@ -314,7 +315,10 @@ const TaskBoard = () => {
     const d = addDays(weekStart, i);
     return { name: format(d, 'EEE', { locale: enUS }), date: format(d, 'd'), fullDate: d };
   });
-  const hours = Array.from({ length: HOURS_COUNT }, (_, i) => i + START_HOUR);
+  const startHour = is24HourView ? 0 : START_HOUR;
+  const hoursCount = is24HourView ? 24 : HOURS_COUNT;
+  
+  const hours = Array.from({ length: hoursCount }, (_, i) => i + startHour);
 
   // Compute calendar slots from unified items
   const allWeekSlots = events
@@ -323,7 +327,7 @@ const TaskBoard = () => {
     .flatMap(e => toCalSlots(e, weekStart))
     .filter(Boolean);
 
-  const calSlots = allWeekSlots.filter(s => s.start >= START_HOUR && s.start < START_HOUR + HOURS_COUNT);
+  const calSlots = allWeekSlots.filter(s => s.start >= startHour && s.start < startHour + hoursCount);
 
   return (
     <div style={{ padding: '0 40px 24px' }} className="animate-fade-in calendar-page-root">
@@ -470,22 +474,23 @@ const TaskBoard = () => {
           </div>
 
           <div className="calendar-body-scroll">
-            <div className="calendar-grid-bg" style={{ gridTemplateRows: `repeat(${HOURS_COUNT}, 1fr)` }}>
-              {hours.map(hour => (
-                <React.Fragment key={hour}>
-                  <div className="grid-cell-time">
-                    <span>{hour.toString().padStart(2, '0')}:00</span>
-                  </div>
-                  {days.map((_, i) => <div key={i} className="grid-cell" />)}
-                </React.Fragment>
-              ))}
-            </div>
+            <div style={{ position: 'relative', minHeight: is24HourView ? '1400px' : '100%', height: 'max-content', display: 'flex', flexDirection: 'column', flex: 1 }}>
+              <div className="calendar-grid-bg" style={{ gridTemplateRows: `repeat(${hoursCount}, 1fr)`, pointerEvents: 'auto' }}>
+                {hours.map(hour => (
+                  <React.Fragment key={hour}>
+                    <div className="grid-cell-time" onClick={() => setIs24HourView(!is24HourView)} style={{ cursor: 'pointer' }}>
+                      <span>{hour.toString().padStart(2, '0')}:00</span>
+                    </div>
+                    {days.map((_, i) => <div key={i} className="grid-cell" onClick={() => setIs24HourView(!is24HourView)} style={{ cursor: 'pointer' }} />)}
+                  </React.Fragment>
+                ))}
+              </div>
 
             <div className="calendar-grid">
               {calSlots.map(slot => {
-                const topPos = ((slot.start - START_HOUR) / HOURS_COUNT) * 100;
-                const durTrimmed = Math.min(slot.duration || 1, START_HOUR + HOURS_COUNT - slot.start);
-                const height = (durTrimmed / HOURS_COUNT) * 100;
+                const topPos = ((slot.start - startHour) / hoursCount) * 100;
+                const durTrimmed = Math.min(slot.duration || 1, startHour + hoursCount - slot.start);
+                const height = (durTrimmed / hoursCount) * 100;
 
                 const leftPos = `calc(var(--time-col-width, 80px) + ${slot.day} * ((100% - var(--time-col-width, 80px)) / 7))`;
                 const width   = `calc((((100% - var(--time-col-width, 80px)) / 7) * ${slot.spanDays}) - 4px)`;
@@ -514,6 +519,7 @@ const TaskBoard = () => {
                 );
               })}
             </div>
+          </div>
           </div>
         </div>
 
@@ -563,7 +569,6 @@ const TaskBoard = () => {
                         {deptTasks.map(task => {
                           globalIdx++;
                           const isFocused = focusedTaskId === task.id;
-                          const isOutsideHours = task.start < START_HOUR || task.start >= START_HOUR + HOURS_COUNT;
                           const canDeleteTask = currentUser?.id === 'PhucMKT' || currentUser?.id === task.categoryId;
                           return (
                             <div 
@@ -592,11 +597,6 @@ const TaskBoard = () => {
                                 <span style={{ opacity: 0.6 }}>{globalIdx}.</span>
                                 <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
                                   <span style={{ whiteSpace: 'normal', wordBreak: 'break-word', fontWeight: '700' }}>{task.title}</span>
-                                  {isOutsideHours && (
-                                    <span style={{ fontSize: '10px', color: '#ef4444', background: '#fee2e2', padding: '2px 6px', borderRadius: '4px', alignSelf: 'flex-start', marginTop: '4px', fontWeight: '800' }}>
-                                      🕒 Deadline: {task.dueTime}
-                                    </span>
-                                  )}
                                 </div>
                               </div>
                               {task.description && (
