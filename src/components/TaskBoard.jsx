@@ -569,7 +569,10 @@ const TaskBoard = () => {
                             <div 
                               key={task.id} 
                               className={`summary-task-item ${isFocused ? 'active' : ''}`}
-                              onClick={() => toggleFocus(task.id)}
+                              onClick={() => {
+                                toggleFocus(task.id);
+                                if (canEdit) openEditModal(task);
+                              }}
                               onContextMenu={(e) => {
                                 e.preventDefault();
                                 e.stopPropagation();
