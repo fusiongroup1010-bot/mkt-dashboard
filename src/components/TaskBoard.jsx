@@ -262,6 +262,7 @@ const TaskBoard = () => {
   const [exportEndDate, setExportEndDate] = useState(null);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [showExportMenu, setShowExportMenu] = useState(false);
+  const [statsContextMenu, setStatsContextMenu] = useState(null);
   const { events, openEditModal, deleteEvent, updateEvent, openAddModal, activeLocation, isEditable } = useEvents();
   const { currentUser } = useAuth();
   const canEdit = isEditable;
@@ -284,6 +285,12 @@ const TaskBoard = () => {
       setTimeout(() => el.classList.remove('highlight-event'), 2000);
     }
   };
+
+  useEffect(() => {
+    const handleGlobalClick = () => setStatsContextMenu(null);
+    document.addEventListener('click', handleGlobalClick);
+    return () => document.removeEventListener('click', handleGlobalClick);
+  }, []);
 
   const toggleFocus = (id) => {
     setFocusedTaskId(prev => prev === id ? null : id);
@@ -310,12 +317,13 @@ const TaskBoard = () => {
   const hours = Array.from({ length: HOURS_COUNT }, (_, i) => i + START_HOUR);
 
   // Compute calendar slots from unified items
-  const calSlots = events
+  const allWeekSlots = events
     .filter(e => e.type === 'task') // ONLY SHOW TASKS
     .filter(e => !CATEGORY_MAP[e.categoryId] || activeCategories[e.categoryId])
     .flatMap(e => toCalSlots(e, weekStart))
-    .filter(Boolean)
-    .filter(s => s.start >= START_HOUR && s.start < START_HOUR + HOURS_COUNT);
+    .filter(Boolean);
+
+  const calSlots = allWeekSlots.filter(s => s.start >= START_HOUR && s.start < START_HOUR + HOURS_COUNT);
 
   return (
     <div style={{ padding: '0 40px 24px' }} className="animate-fade-in calendar-page-root">
@@ -534,7 +542,7 @@ const TaskBoard = () => {
             {(() => {
               let globalIdx = 0;
               return currentDepts.map(dept => {
-                const deptTasks = calSlots.filter(s => s.categoryId === dept.id);
+                const deptTasks = allWeekSlots.filter(s => s.categoryId === dept.id);
                 if (deptTasks.length === 0) return null;
                 const isExpanded = expandedDept === dept.id;
 
@@ -555,11 +563,20 @@ const TaskBoard = () => {
                         {deptTasks.map(task => {
                           globalIdx++;
                           const isFocused = focusedTaskId === task.id;
+                          const isOutsideHours = task.start < START_HOUR || task.start >= START_HOUR + HOURS_COUNT;
+                          const canDeleteTask = currentUser?.id === 'PhucMKT' || currentUser?.id === task.categoryId;
                           return (
                             <div 
                               key={task.id} 
                               className={`summary-task-item ${isFocused ? 'active' : ''}`}
                               onClick={() => toggleFocus(task.id)}
+                              onContextMenu={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                if (canEdit && canDeleteTask) {
+                                  setStatsContextMenu({ id: task.id, x: e.clientX, y: e.clientY });
+                                }
+                              }}
                               style={{ 
                                 display: 'flex', gap: '8px',
                                 flexDirection: 'column',
@@ -570,7 +587,14 @@ const TaskBoard = () => {
                             >
                               <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
                                 <span style={{ opacity: 0.6 }}>{globalIdx}.</span>
-                                <span style={{ flex: 1, whiteSpace: 'normal', wordBreak: 'break-word', fontWeight: '700' }}>{task.title}</span>
+                                <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                                  <span style={{ whiteSpace: 'normal', wordBreak: 'break-word', fontWeight: '700' }}>{task.title}</span>
+                                  {isOutsideHours && (
+                                    <span style={{ fontSize: '10px', color: '#ef4444', background: '#fee2e2', padding: '2px 6px', borderRadius: '4px', alignSelf: 'flex-start', marginTop: '4px', fontWeight: '800' }}>
+                                      🕒 Deadline: {task.dueTime}
+                                    </span>
+                                  )}
+                                </div>
                               </div>
                               {task.description && (
                                 <div style={{ fontSize: '11px', fontStyle: 'italic', color: isFocused ? 'var(--primary-accent)' : 'var(--text-muted)', opacity: 0.85, paddingLeft: '20px', whiteSpace: 'normal', wordBreak: 'break-word', marginTop: '2px' }}>
@@ -640,6 +664,39 @@ const TaskBoard = () => {
           setExportType(type);
         }}
       />
+
+      {/* Stats Context Menu */}
+      {statsContextMenu && (
+        <div 
+          onClick={(e) => e.stopPropagation()}
+          style={{
+            position: 'fixed',
+            top: statsContextMenu.y,
+            left: statsContextMenu.x,
+            background: 'var(--bg-panel)',
+            border: '1px solid var(--border-light)',
+            borderRadius: '12px',
+            boxShadow: '0 12px 36px rgba(0,0,0,0.14)',
+            padding: '6px',
+            zIndex: 9999,
+            minWidth: '150px',
+            animation: 'popIn 0.2s cubic-bezier(0.16,1,0.3,1)'
+          }}
+        >
+          <div 
+            className="context-menu-item delete" 
+            style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', cursor: 'pointer', color: '#ef4444', fontWeight: '600', fontSize: '13px', borderRadius: '8px' }}
+            onMouseEnter={(e) => e.currentTarget.style.background = '#fee2e2'}
+            onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+            onClick={() => {
+              deleteEvent(statsContextMenu.id);
+              setStatsContextMenu(null);
+            }}
+          >
+            <Trash2 size={14} /> Delete Task
+          </div>
+        </div>
+      )}
     </div>
   );
 };
