@@ -13,10 +13,12 @@ import { EventProvider } from './context/EventContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { NotifyProvider } from './context/NotifyContext';
 import NotifyWindow from './components/NotifyWindow';
+import UserManagementModal from './components/UserManagementModal';
 
 function AppContent() {
   const { currentUser } = useAuth();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isUserMgmtOpen, setIsUserMgmtOpen] = useState(false);
   const [showProgressReminder, setShowProgressReminder] = useState(false);
   const navigate = useNavigate();
 
@@ -76,9 +78,16 @@ function AppContent() {
 
   return (
     <div className={`app-container ${isSidebarOpen ? 'sidebar-active' : ''}`}>
-      <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
+      <Sidebar 
+        isOpen={isSidebarOpen} 
+        onClose={() => setIsSidebarOpen(false)} 
+        onOpenUserMgmt={() => setIsUserMgmtOpen(true)}
+      />
       <div className="main-content">
-        <TopNav onMenuClick={() => setIsSidebarOpen(true)} />
+        <TopNav 
+          onMenuClick={() => setIsSidebarOpen(true)} 
+          onOpenUserMgmt={() => setIsUserMgmtOpen(true)}
+        />
         <div className="content-area">
           <Routes>
             <Route path="/" element={<Dashboard />} />
@@ -93,6 +102,7 @@ function AppContent() {
         </div>
       </div>
       <NotifyWindow />
+      <UserManagementModal isOpen={isUserMgmtOpen} onClose={() => setIsUserMgmtOpen(false)} />
 
       {/* Daily Progress Reminder Toast */}
       {showProgressReminder && (

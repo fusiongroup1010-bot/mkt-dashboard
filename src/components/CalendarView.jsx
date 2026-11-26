@@ -47,7 +47,7 @@ const CalendarView = () => {
 
   useEffect(() => {
     setActiveCategories(Object.fromEntries(currentDepts.map(c => [c.id, true])));
-  }, [activeLocation]);
+  }, [activeLocation, departments]);
 
   const toggleCat = (id) => setActiveCategories(p => ({ ...p, [id]: !p[id] }));
 

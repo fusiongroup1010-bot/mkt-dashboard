@@ -1,38 +1,40 @@
 import React, { createContext, useState, useContext, useEffect, useRef } from 'react';
 
+import { INITIAL_EMPLOYEES } from './AuthContext';
+
 /* ── MKT Members as calendar categories ── */
-// Static named members (always visible)
-const NAMED_MEMBERS = [
-  { id: 'PhucMKT',  name: 'Phúc',          color: '#6366f1', text: '#ffffff', accent: '#6366f1' },
-  { id: 'NVMKT1',   name: 'Thanh Hoa',      color: '#ec4899', text: '#ffffff', accent: '#ec4899' },
-  { id: 'NVMKT2',   name: 'Ngọc Linh',      color: '#10b981', text: '#ffffff', accent: '#10b981' },
-  { id: 'NVMKT3',   name: 'Phương Thảo',    color: '#f59e0b', text: '#ffffff', accent: '#f59e0b' },
-  { id: 'NVMKT4',   name: 'Thúy Quỳnh',     color: '#3b82f6', text: '#ffffff', accent: '#3b82f6' },
-  { id: 'NVMKT5',   name: 'Phạm Chiêm',     color: '#ef4444', text: '#ffffff', accent: '#ef4444' },
-  { id: 'NVMKT6',   name: 'Thu Trang',       color: '#8b5cf6', text: '#ffffff', accent: '#8b5cf6' },
-];
-
-// Dynamic unnamed slots (NVMKT7-10): only show when their display name has been changed
-const UNNAMED_SLOTS = ['NVMKT7', 'NVMKT8', 'NVMKT9', 'NVMKT10'];
-const UNNAMED_COLORS = ['#14b8a6', '#f97316', '#84cc16', '#64748b'];
-
 // Helper: get current stored name for an ID
 function getStoredName(id, fallbackName) {
   return localStorage.getItem(`name_${id}`) || fallbackName || id;
 }
 
+function getStoredEmployees() {
+  try {
+    const raw = localStorage.getItem('mkt_custom_employees');
+    const deletedRaw = localStorage.getItem('mkt_deleted_emp_ids');
+    const deletedIds = deletedRaw ? JSON.parse(deletedRaw) : [];
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed.filter(e => e.id !== 'Guest' && !deletedIds.includes(e.id));
+      }
+    }
+  } catch (e) {}
+  return INITIAL_EMPLOYEES.filter(e => e.id !== 'Guest');
+}
+
 // Build full DEPARTMENTS.all dynamically
 function buildDepartments() {
-  const all = NAMED_MEMBERS.map(m => ({
-    ...m,
-    name: getStoredName(m.id, m.name)
-  }));
-  UNNAMED_SLOTS.forEach((id, idx) => {
-    const stored = getStoredName(id);
-    // Only include if user has changed from the default (id itself)
-    if (stored !== id) {
-      all.push({ id, name: stored, color: UNNAMED_COLORS[idx], text: '#ffffff', accent: UNNAMED_COLORS[idx] });
-    }
+  const emps = getStoredEmployees();
+  const all = emps.map(emp => {
+    const displayName = getStoredName(emp.id, emp.name);
+    return {
+      id: emp.id,
+      name: displayName,
+      color: emp.color || '#3b82f6',
+      text: '#ffffff',
+      accent: emp.color || '#3b82f6'
+    };
   });
   return { all };
 }
@@ -106,13 +108,13 @@ export const EventProvider = ({ children }) => {
   const [items, setItems] = useState(() => loadMergedState(null));
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentEvent, setCurrentEvent] = useState(null);
-  const { currentUser } = useAuth();
+  const { currentUser, employees } = useAuth();
   const [activeLocation, setActiveLocation] = useState('all');
 
   useEffect(() => { setActiveLocation('all'); }, [currentUser]);
 
-  // Refresh departments when currentUser changes (e.g. after name update)
-  useEffect(() => { refreshDepartments(); }, [currentUser]);
+  // Refresh departments when currentUser or employees list changes (e.g. after add/delete/name update)
+  useEffect(() => { refreshDepartments(); }, [currentUser, employees]);
 
   useEffect(() => {
     const t = {

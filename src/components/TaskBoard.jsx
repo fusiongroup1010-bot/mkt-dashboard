@@ -23,7 +23,7 @@ const HOURS_COUNT = 10; // 8 AM → 5 PM (17:00)
 const CATEGORY_LIST = Object.entries(CATEGORY_MAP).map(([id, v]) => ({ id, ...v }));
 
 /* ── Convert a unified item to a SINGLE spanning slot ── */
-const toCalSlots = (item, weekStart) => {
+const toCalSlots = (item, weekStart, catMap) => {
   if (!item.dueDate || !item.dueTime) return [];
   const startDate  = new Date(item.dueDate + 'T00:00:00');
   const endDateStr = item.endDate || item.dueDate;
@@ -40,7 +40,7 @@ const toCalSlots = (item, weekStart) => {
 
   const [h, m] = item.dueTime.split(':').map(Number);
   const start  = h + m / 60;
-  const cat    = CATEGORY_MAP[item.categoryId] || { color: '#888', text: '#fff', accent: '#888' };
+  const cat    = (catMap && catMap[item.categoryId]) || CATEGORY_MAP[item.categoryId] || { color: '#888', text: '#fff', accent: '#888' };
   const isMultiDay = item.endDate && item.endDate !== item.dueDate;
 
   return [{
@@ -263,11 +263,11 @@ const TaskBoard = () => {
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [showExportMenu, setShowExportMenu] = useState(false);
   const [statsContextMenu, setStatsContextMenu] = useState(null);
-  const { events, openEditModal, deleteEvent, updateEvent, openAddModal, activeLocation, isEditable } = useEvents();
-  const { currentUser } = useAuth();
+  const { events, openEditModal, deleteEvent, updateEvent, openAddModal, activeLocation, isEditable, departments, categoryMap } = useEvents();
+  const { currentUser, employees } = useAuth();
   const canEdit = isEditable;
   
-  const currentDepts = DEPARTMENTS[activeLocation] || [];
+  const currentDepts = (departments && (departments[activeLocation] || departments.all)) || DEPARTMENTS[activeLocation] || [];
 
   // Active category filter
   const [activeCategories, setActiveCategories] = useState({});
@@ -300,7 +300,7 @@ const TaskBoard = () => {
 
   useEffect(() => {
     setActiveCategories(Object.fromEntries(currentDepts.map(c => [c.id, true])));
-  }, [activeLocation]);
+  }, [activeLocation, departments]);
 
   const toggleCat = (id) => setActiveCategories(p => ({ ...p, [id]: !p[id] }));
 
@@ -323,8 +323,8 @@ const TaskBoard = () => {
   // Compute calendar slots from unified items
   const allWeekSlots = events
     .filter(e => e.type === 'task') // ONLY SHOW TASKS
-    .filter(e => !CATEGORY_MAP[e.categoryId] || activeCategories[e.categoryId])
-    .flatMap(e => toCalSlots(e, weekStart))
+    .filter(e => !((categoryMap && categoryMap[e.categoryId]) || CATEGORY_MAP[e.categoryId]) || activeCategories[e.categoryId])
+    .flatMap(e => toCalSlots(e, weekStart, categoryMap))
     .filter(Boolean);
 
   const calSlots = allWeekSlots.filter(s => s.start >= startHour && s.start < startHour + hoursCount);
@@ -418,8 +418,8 @@ const TaskBoard = () => {
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
               {currentDepts.map(cat => {
-                // Look up the real display name from EMPLOYEES (or localStorage-saved name)
-                const emp = EMPLOYEES.find(e => e.id === cat.id);
+                // Look up the real display name from employees (or localStorage-saved name)
+                const emp = (employees && employees.find(e => e.id === cat.id)) || EMPLOYEES.find(e => e.id === cat.id);
                 const storedName = localStorage.getItem(`name_${cat.id}`);
                 const displayName = storedName || (emp ? emp.name : cat.name);
                 return (
