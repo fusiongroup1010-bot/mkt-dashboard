@@ -81,7 +81,6 @@ function AppContent() {
       <Sidebar 
         isOpen={isSidebarOpen} 
         onClose={() => setIsSidebarOpen(false)} 
-        onOpenUserMgmt={() => setIsUserMgmtOpen(true)}
       />
       <div className="main-content">
         <TopNav 

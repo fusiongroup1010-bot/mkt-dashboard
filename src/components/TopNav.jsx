@@ -50,6 +50,17 @@ const TopNav = ({ onMenuClick, onOpenUserMgmt }) => {
            <span>{format(today, 'EEEE, MMM dd', { locale: enUS })}</span>
         </div>
 
+        {currentUser?.role !== 'guest' && location.pathname !== '/' && (
+          <button 
+            className="btn-primary" 
+            style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
+            onClick={openAddModal}
+          >
+            <Plus size={18} strokeWidth={2.5} />
+            <span>Add Task</span>
+          </button>
+        )}
+
         {isAdmin && (
           <button 
             className="btn-secondary" 
@@ -64,17 +75,6 @@ const TopNav = ({ onMenuClick, onOpenUserMgmt }) => {
           >
             <Shield size={16} />
             <span>Quản lý ID</span>
-          </button>
-        )}
-
-        {currentUser?.role !== 'guest' && location.pathname !== '/' && (
-          <button 
-            className="btn-primary" 
-            style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
-            onClick={openAddModal}
-          >
-            <Plus size={18} strokeWidth={2.5} />
-            <span>Add Task</span>
           </button>
         )}
         

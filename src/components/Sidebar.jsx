@@ -1,13 +1,13 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { Home, CalendarClock, LayoutDashboard, ChevronLeft, Megaphone, Shield } from 'lucide-react';
+import { Home, CalendarClock, LayoutDashboard, ChevronLeft, Megaphone } from 'lucide-react';
 import logo from '../assets/fusion-logo.png';
 import { useNotify } from '../context/NotifyContext';
 import { useAuth } from '../context/AuthContext';
 
-const Sidebar = ({ isOpen, onClose, onOpenUserMgmt }) => {
+const Sidebar = ({ isOpen, onClose }) => {
   const { unreadCount } = useNotify();
-  const { currentUser, isAdmin } = useAuth();
+  const { currentUser } = useAuth();
 
   return (
     <>
@@ -70,23 +70,6 @@ const Sidebar = ({ isOpen, onClose, onOpenUserMgmt }) => {
             </div>
           )}
         </NavLink>
-
-        {isAdmin && (
-          <div 
-            className="btn-ghost" 
-            onClick={onOpenUserMgmt}
-            style={{ 
-              cursor: 'pointer', 
-              color: '#b45309', 
-              background: 'rgba(254, 243, 199, 0.45)',
-              border: '1px dashed #fde68a',
-              marginTop: '6px'
-            }}
-          >
-            <Shield size={20} strokeWidth={2.5} color="#b45309" />
-            <span style={{ fontWeight: '800' }}>Quản lý ID</span>
-          </div>
-        )}
         
       </div>
 
